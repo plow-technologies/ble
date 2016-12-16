@@ -1,0 +1,63 @@
+name:                ble
+version:             0.1.0.0
+synopsis:            Bluetooth Low Energy (BLE) peripherals
+description:         >
+    This package provides a Haskell API for writing Bluetooth Low Energy
+    peripherals.
+
+homepage:            http://github.com/plow-technologies/ble#readme
+license:             BSD3
+license-file:        LICENSE
+author:              Julian K. Arni
+maintainer:          jkarni@turingjump.com
+copyright:           2016 Julian K. Arni
+github:              plow-techonolgies/ble
+tested-with:         GHC == 7.10.2, GHC == 8.0.1
+
+ghc-options: -Wall
+
+dependencies:
+  - base >= 4.7 && < 4.10
+  - text
+
+default-extensions:
+  - AutoDeriveTypeable
+  - ConstraintKinds
+  - DataKinds
+  - DefaultSignatures
+  - DeriveFoldable
+  - DeriveFunctor
+  - DeriveGeneric
+  - DeriveTraversable
+  - FlexibleContexts
+  - FlexibleInstances
+  - FunctionalDependencies
+  - GADTs
+  - KindSignatures
+  - MultiParamTypeClasses
+  - OverloadedStrings
+  - RankNTypes
+  - ScopedTypeVariables
+  - TypeFamilies
+  - TypeOperators
+
+library:
+  source-dirs:      src
+  other-modules:    []
+
+tests:
+  spec:
+    main:            Spec.hs
+    source-dirs:     test
+    dependencies:
+      - ble
+      - hspec > 2 && < 3
+      - QuickCheck >= 2.8 && < 2.9
+  doctest:
+    main:            Doctest.hs
+    source-dirs:     test
+    dependencies:
+      - doctest >= 0.9 && < 0.12
+      - Glob >= 0.7 && < 0.8
+      - yaml == 0.8.*
+
