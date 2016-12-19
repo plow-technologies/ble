@@ -1,0 +1,23 @@
+sudo: required
+
+services:
+  - docker
+
+before_install:
+  # We need Ubuntu >= 15, which travis doesn't have, so we use docker
+  - docker pull jkarni/ble
+  - docker run test
+  
+install:
+  # stack
+  - mkdir -p ~/.local/bin
+  - export PATH=~/.local/bin:$PATH
+  - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+  - stack --version
+
+script:
+  - ./travis.sh
+
+cache:
+  directories:
+    - $HOME/.stack

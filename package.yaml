@@ -19,7 +19,10 @@ ghc-options: -Wall
 dependencies:
   - base >= 4.7 && < 4.10
   - text
-
+  - d-bus
+  - largeword
+  - mtl
+  
 default-extensions:
   - AutoDeriveTypeable
   - ConstraintKinds
