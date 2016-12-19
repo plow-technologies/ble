@@ -8,9 +8,12 @@ import Data.LargeWord (Word128)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Except (ExceptT(ExceptT), MonadError, runExceptT)
 import Control.Monad.Reader (ReaderT(ReaderT), runReaderT, MonadReader)
-import DBus (MethodError, DBusConnection, ObjectPath, Representable(..), DBusType(TypeVariant), DBusValue(DBVVariant))
+import DBus (MethodError, DBusConnection, ObjectPath, Representable(..), DBusType(TypeVariant), DBusValue(DBVVariant), SomeDBusValue)
+import DBus.Message (MessageHeader)
 import Numeric (readHex)
 import Data.String (IsString(fromString))
+import Control.Monad.Writer (WriterT, MonadWriter, runWriterT)
+import Control.Monad.Trans (lift)
 
 data UUID
   = OfficialUUID Word16
@@ -68,19 +71,27 @@ data AdvertisingPacketType
   | ScannableUndirected
   deriving (Eq, Show, Read, Generic, Ord)
 
+data Handlers = Handlers
+  { methodCallHandler :: MessageHeader -> [SomeDBusValue] -> IO ()
+  , signalHandler     :: MessageHeader -> [SomeDBusValue] -> IO ()
+  }
+
+instance Monoid Handlers where
+  mempty = let u _ _ = return () in Handlers u u
+  Handlers f1 g1 `mappend` Handlers f2 g2 = Handlers (f1 >> f2) (g1 >> g2) 
+
 newtype BluetoothM a
-  = BluetoothM ( ReaderT DBusConnection (ExceptT MethodError IO) a )
+  = BluetoothM ( ReaderT DBusConnection (WriterT Handlers (ExceptT MethodError IO)) a )
   deriving (Functor, Applicative, Monad, MonadIO, MonadError MethodError,
             MonadReader DBusConnection)
 
-runBluetoothM :: BluetoothM a -> DBusConnection -> IO (Either MethodError a)
-runBluetoothM (BluetoothM e) conn = runExceptT (runReaderT e conn)
+runBluetoothM :: BluetoothM a -> DBusConnection -> IO (Either MethodError (a, Handlers))
+runBluetoothM (BluetoothM e) conn = runExceptT $ runWriterT (runReaderT e conn)
 
-toBluetoothM :: (DBusConnection -> IO (Either MethodError a)) -> BluetoothM a
-toBluetoothM = BluetoothM . ReaderT . fmap ExceptT
+-- toBluetoothM :: (DBusConnection -> IO (Either MethodError a)) -> BluetoothM a
+-- toBluetoothM f =  BluetoothM $ ReaderT . fmap lift
 
-data Error
-
+-- | A Haskell existential type corresponding to DBus' @Variant@.
 data Any where
   MkAny :: forall a . Representable a => a -> Any
 
