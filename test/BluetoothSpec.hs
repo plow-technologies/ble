@@ -4,22 +4,26 @@ module BluetoothSpec (spec) where
 import Bluetooth
 import Test.Hspec
 import DBus 
-import Control.Concurrent (threadDelay)
 
 spec :: Spec
 spec = do
-  registerServiceSpec
+  registerApplicationSpec
 
-registerServiceSpec :: Spec
-registerServiceSpec = describe "registerService" $ beforeAll connect $ do
+registerApplicationSpec :: Spec
+registerApplicationSpec = describe "registerApplication" $ beforeAll connect $ do
   
   it "registers the service with bluez" $ \conn -> do
-    v <- runBluetoothM (registerService testService) conn
-    threadDelay 10000000
+    v <- runBluetoothM (registerApplication testApp) conn
     v `shouldBe` Right ()
 
 
 -- * Test service
+
+testApp :: Application
+testApp = Application
+  { applicationRoot = "/com/turingjump/test"
+  , applicationServices = [testService]
+  }
 
 testService :: Service
 testService = Service

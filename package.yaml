@@ -22,6 +22,7 @@ dependencies:
   - d-bus
   - largeword
   - mtl
+  - containers
 
 default-extensions:
   - AutoDeriveTypeable
