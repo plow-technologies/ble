@@ -9,13 +9,26 @@ import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Except (ExceptT(ExceptT), MonadError, runExceptT)
 import Control.Monad.Reader (ReaderT(ReaderT), runReaderT, MonadReader)
 import DBus (MethodError, DBusConnection)
+import Numeric (readHex)
+import Data.String (IsString(fromString))
 
 data UUID
   = OfficialUUID Word16
   -- Custom services use 128-bit identifiers
   | UnofficialUUID Word128
   deriving (Eq, Show, Generic)
-  
+
+instance IsString UUID where
+  fromString x
+    | length x == 32 = UnofficialUUID $ go x
+    | length x == 4  = OfficialUUID $ go x
+    | otherwise      = error "UUID.fromString: expecting 128 or 16-bit UUID"
+    where
+    go y = case [ z | (z, "") <- readHex y ] of
+      [val] -> val
+      []    -> error "UUID.fromString: no parse"
+      _     -> error "UUID.fromString: ambiguous parse"
+      
 data Service = Service
   { serviceName :: T.Text
   , serviceUUID :: UUID

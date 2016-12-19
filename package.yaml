@@ -22,7 +22,7 @@ dependencies:
   - d-bus
   - largeword
   - mtl
-  
+
 default-extensions:
   - AutoDeriveTypeable
   - ConstraintKinds
