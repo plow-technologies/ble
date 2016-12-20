@@ -13,7 +13,6 @@ import DBus.Types (root)
 import Data.IORef
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
-import Data.Singletons.TH (genSingletons)
 import Data.String (IsString(fromString))
 import Data.Word (Word16, Word32)
 import GHC.Generics (Generic)
@@ -22,6 +21,7 @@ import Numeric (readHex, showHex)
 import qualified Data.UUID as UUID
 import qualified Data.Map as Map
 import qualified Data.Text as T
+import qualified System.Random as Rand
 
 -- See <http://www.itu.int/rec/T-REC-X.667/en ITU-T Rec. X.677> for more
 -- information on the format and generation of these UUIDs.
@@ -47,6 +47,16 @@ instance IsString UUID where
 instance Representable UUID where
   type RepType UUID = 'DBusSimpleType 'TypeString
   toRep (UnofficialUUID w) = toRep $ UUID.toText w
+  fromRep x = do
+    s <- fromRep x
+    case T.length s of
+      36 -> UnofficialUUID <$> UUID.fromText s
+      _  -> Nothing
+
+instance Rand.Random UUID where
+  randomR (UnofficialUUID lo, UnofficialUUID hi) g =
+    let (a', g') = Rand.randomR (lo,hi) g in (UnofficialUUID a', g') 
+  random g = let (a', g') = Rand.random g in (UnofficialUUID a', g')
   
 
 data Application = Application

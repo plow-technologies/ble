@@ -23,7 +23,7 @@ dependencies:
   - uuid
   - mtl
   - containers
-  - singletons
+  - random
 
 default-extensions:
   - AutoDeriveTypeable
