@@ -20,9 +20,10 @@ dependencies:
   - base >= 4.7 && < 4.10
   - text
   - d-bus
-  - largeword
+  - uuid
   - mtl
   - containers
+  - singletons
 
 default-extensions:
   - AutoDeriveTypeable
