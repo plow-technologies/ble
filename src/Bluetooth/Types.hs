@@ -55,11 +55,14 @@ data Application = Application
   } deriving (Eq, Show, Generic)
 
 instance Representable Application where
-  type RepType Application = 'TypeDict 'TypeObjectPath (RepType Service)
-  toRep app = DBVDict $ go <$> applicationServices app
+  type RepType Application = 'TypeDict 'TypeObjectPath ('TypeDict 'TypeString ('TypeDict 'TypeString 'TypeVariant))
+  toRep app = DBVDict $ zipWith servPaths ([0..]::[Int]) $ applicationServices app
     where
-      prefixed n = objectPath $ objectPathToText (applicationRoot app) <> "/" <> n
-      go s = (toRep $ prefixed $ serviceName s , toRep s)
+      root = objectPathToText $ applicationRoot app
+      servPaths i s = (toRep $ objectPath path, serviceAsDict path s) 
+        where
+          path = root </> ("serv" <> T.pack (show i)) 
+
       
 data Service = Service
   { serviceName :: T.Text
@@ -68,26 +71,44 @@ data Service = Service
   } deriving (Eq, Show, Generic)
 
 
-
-instance Representable Service where
-  type RepType Service = 'TypeDict 'TypeString ('TypeDict 'TypeString 'TypeVariant)
-  toRep s = toRep (Map.fromList [(gattServiceIFace, tmap)])
+serviceAsDict :: T.Text -> Service
+  -> DBusValue ('TypeDict 'TypeString ('TypeDict 'TypeString 'TypeVariant))
+serviceAsDict opath serv
+  = toRep (Map.fromList [(gattServiceIFace, tmap)])
     where
       gattServiceIFace :: T.Text
       gattServiceIFace = "org.bluez.GattService1"
       
       tmap :: Map.Map T.Text Any
-      tmap = Map.fromList [ ("UUID", MkAny $ serviceUUID s)
+      tmap = Map.fromList [ ("UUID", MkAny $ serviceUUID serv)
                           -- Only primary services for now
                           , ("Primary", MkAny $ True)
-                          , ("Characteristics", MkAny ([] :: [ObjectPath]))
+                          , ("Characteristics",
+                             MkAny (charPaths . length $ serviceCharacteristics serv))
                           ]
+
+      charPaths :: Int -> [ObjectPath]
+      charPaths i = (\x -> objectPath $ opath </> ("char" <> T.pack (show x))) <$> [0..i]  
+
   
 data Characteristic = Characteristic
-  { characteristicName :: T.Text
-  , characteristicUUID :: UUID
+  { characteristicUUID :: UUID
   , characteristicProperties :: [CharacteristicProperty]
   } deriving (Eq, Show, Generic)
+
+characteristicAsDict :: T.Text -> Characteristic
+  -> DBusValue ('TypeDict 'TypeString ('TypeDict 'TypeString 'TypeVariant))
+characteristicAsDict opath char 
+  = toRep $ Map.fromList [(gattCharIFace, tmap)]
+    where
+      gattCharIFace :: T.Text
+      gattCharIFace = "org.bluez.GattCharacteristic1"
+      
+      tmap :: Map.Map T.Text Any
+      tmap = Map.fromList [ ("UUID", MkAny $ characteristicUUID char)
+                          , ("Service", MkAny $ objectPath opath)
+                          , ("Flags", MkAny $ characteristicProperties char)
+                          ]  
 
 data CharacteristicProperty
   = CPBroadcast
@@ -98,6 +119,26 @@ data CharacteristicProperty
   | CPIndicate
   | CPSignedWriteCommand
   deriving (Eq, Show, Read, Ord, Generic)
+
+instance Representable CharacteristicProperty where
+  type RepType CharacteristicProperty = 'DBusSimpleType 'TypeString
+  toRep x = maybe (error "impossible") toRep $ lookup x chrPropPairs
+  fromRep x = do
+    key <- fromRep x
+    let swapped = (\(a,b) -> (b,a)) <$> chrPropPairs
+    lookup key swapped
+    
+
+chrPropPairs :: [(CharacteristicProperty, T.Text)]
+chrPropPairs =
+  [(CPBroadcast, "broadcast")
+  ,(CPRead, "read")
+  ,(CPWriteWithouResponse, "write-without-response")
+  ,(CPWrite, "write")
+  ,(CPNotify, "notify")
+  ,(CPIndicate, "indicate")
+  ,(CPSignedWriteCommand, "authenticated-signed-writes")
+  ]
 
 data Descriptor
   = ExtendedProperties
@@ -148,4 +189,10 @@ instance Representable Any where
   toRep (MkAny x) = DBVVariant (toRep x)
   fromRep (DBVVariant x) = Just (MkAny x)
 
--- $(genSingletons [''Characteristic, ''UUID, ''T.Text, ''Service])
+
+-- | Append two Texts, keeping exactly one slash between them.
+(</>) :: T.Text -> T.Text -> T.Text
+a </> b 
+  | "/" `T.isSuffixOf` a && "/" `T.isPrefixOf` b = a <> T.tail b
+  | "/" `T.isSuffixOf` a || "/" `T.isPrefixOf` b = a <> b
+  | otherwise                                    = a <> "/" <> b
