@@ -1,11 +1,11 @@
 module Bluetooth.DBus where
 
-import Bluetooth.Types
-import Control.Monad.Reader
-import qualified Data.Text as T
-import qualified Data.Map as Map
-import DBus
-import DBus.Types (object)
+import           Bluetooth.Types
+import           Control.Monad.Reader
+import qualified Data.Map             as Map
+import qualified Data.Text            as T
+import           DBus
+import           DBus.Types           (object)
 
 -- | Registers an application (set of services) with Bluez.
 registerApplication :: Application -> BluetoothM ()
@@ -16,7 +16,6 @@ registerApplication app = do
   liftIO $ addObj (applicationRoot app) appObj
   toBluetoothM . const
     $ callMethod bluezName bluezPath gattManagerIFace "RegisterApplication"  args [] conn
-  -- forM_ (applicationServices app) 
   where
     args :: (ObjectPath, Map.Map T.Text Any)
     args = (applicationRoot app, Map.empty)
@@ -40,7 +39,7 @@ registerApplication app = do
                "GetManagedObjects"
                Done
                ("rep" :> Done)
- 
+
 
 -- * Constants
 

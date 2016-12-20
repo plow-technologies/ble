@@ -1,28 +1,32 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE UndecidableInstances       #-}
 module Bluetooth.Types where
 
 
-import Control.Monad.Except (ExceptT(ExceptT), MonadError, runExceptT)
+import Control.Monad.Except   (ExceptT (ExceptT), MonadError, runExceptT)
 import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.Reader (ReaderT(ReaderT), runReaderT, MonadReader)
-import DBus (MethodError, DBusConnection, ObjectPath, Representable(..),
-             DBusType(TypeVariant, TypeDict, DBusSimpleType), DBusValue(DBVVariant, DBVDict), connectBus,
-             ConnectionType(System), Object, objectRoot, DBusSimpleType(..), objectPath, objectPathToText)
-import DBus.Types (root)
+import Control.Monad.Reader   (MonadReader, ReaderT (ReaderT), runReaderT)
 import Data.IORef
-import Data.Maybe (fromMaybe)
-import Data.Monoid ((<>))
-import Data.String (IsString(fromString))
-import Data.Word (Word16, Word32)
-import GHC.Generics (Generic)
-import Numeric (readHex)
-import Lens.Micro.TH (makeFields)
+import Data.Maybe             (fromMaybe)
+import Data.Monoid            ((<>))
+import Data.String            (IsString (fromString))
+import Data.Word              (Word16, Word32)
+import DBus                   (ConnectionType (System), DBusConnection,
+                               DBusSimpleType (..),
+                               DBusType (DBusSimpleType, TypeDict, TypeVariant),
+                               DBusValue (DBVDict, DBVVariant), MethodError,
+                               Object, ObjectPath, Representable (..),
+                               connectBus, objectPath, objectPathToText,
+                               objectRoot)
+import DBus.Types             (root)
+import GHC.Generics           (Generic)
+import Lens.Micro.TH          (makeFields)
+import Numeric                (readHex)
 
-import qualified Data.UUID as UUID
-import qualified Data.Map as Map
-import qualified Data.Text as T
+import qualified Data.Map      as Map
+import qualified Data.Text     as T
+import qualified Data.UUID     as UUID
 import qualified System.Random as Rand
 
 -- * UUID
@@ -38,7 +42,8 @@ data UUID
 
 instance IsString UUID where
   fromString x
-    | length x > 8  = UnofficialUUID $ fromMaybe (error "UUID.fromString: invalid UUID") $ UUID.fromString x 
+    | length x > 8  = UnofficialUUID
+       $ fromMaybe (error "UUID.fromString: invalid UUID") $ UUID.fromString x
     | length x == 8 = OfficialUUID32 $ go x
     | length x == 4 = OfficialUUID16 $ go x
     | otherwise     = error "UUID.fromString: expecting 16, 32 or 128-bit UUID"
@@ -62,27 +67,29 @@ instance Rand.Random UUID where
     let (a', g') = Rand.randomR (lo,hi) g in (UnofficialUUID a', g')
   randomR _ g = Rand.random g
   random g = let (a', g') = Rand.random g in (UnofficialUUID a', g')
-  
+
 -- * Application
 
 data Application = Application
-  { applicationRoot :: ObjectPath
+  { applicationRoot     :: ObjectPath
   , applicationServices :: [Service]
   } deriving (Eq, Show, Generic)
 
 instance Representable Application where
-  type RepType Application = 'TypeDict 'TypeObjectPath ('TypeDict 'TypeString ('TypeDict 'TypeString 'TypeVariant))
+  type RepType Application
+    = 'TypeDict 'TypeObjectPath
+                ('TypeDict 'TypeString ('TypeDict 'TypeString 'TypeVariant))
   toRep app = DBVDict $ zipWith servPaths ([0..]::[Int]) $ applicationServices app
     where
       root' = objectPathToText $ applicationRoot app
-      servPaths i s = (toRep $ objectPath path, serviceAsDict path s) 
+      servPaths i s = (toRep $ objectPath path, serviceAsDict path s)
         where
-          path = root' </> ("serv" <> T.pack (show i)) 
+          path = root' </> ("serv" <> T.pack (show i))
 
 -- * Service
 
 data Service = Service
-  { serviceUUID :: UUID
+  { serviceUUID            :: UUID
   , serviceCharacteristics :: [Characteristic]
   } deriving (Eq, Show, Generic)
 
@@ -94,38 +101,38 @@ serviceAsDict opath serv
     where
       gattServiceIFace :: T.Text
       gattServiceIFace = "org.bluez.GattService1"
-      
+
       tmap :: Map.Map T.Text Any
-      tmap = Map.fromList [ ("UUID", MkAny $ serviceUUID serv)
-                          -- Only primary services for now
-                          , ("Primary", MkAny $ True)
-                          , ("Characteristics",
-                             MkAny (charPaths . length $ serviceCharacteristics serv))
-                          ]
+      tmap = Map.fromList
+        [ ("UUID", MkAny $ serviceUUID serv)
+        -- Only primary services for now
+        , ("Primary", MkAny $ True)
+        , ("Characteristics", MkAny (charPaths . length $ serviceCharacteristics serv))
+        ]
 
       charPaths :: Int -> [ObjectPath]
-      charPaths i = (\x -> objectPath $ opath </> ("char" <> T.pack (show x))) <$> [0..i]  
+      charPaths i = (\x -> objectPath $ opath </> ("char" <> T.pack (show x))) <$> [0..i]
 
 -- * Characteristic
 
 data Characteristic = Characteristic
-  { characteristicUUID :: UUID
+  { characteristicUUID       :: UUID
   , characteristicProperties :: [CharacteristicProperty]
   } deriving (Eq, Show, Generic)
 
 characteristicAsDict :: T.Text -> Characteristic
   -> DBusValue ('TypeDict 'TypeString ('TypeDict 'TypeString 'TypeVariant))
-characteristicAsDict opath char 
+characteristicAsDict opath char
   = toRep $ Map.fromList [(gattCharIFace, tmap)]
     where
       gattCharIFace :: T.Text
       gattCharIFace = "org.bluez.GattCharacteristic1"
-      
+
       tmap :: Map.Map T.Text Any
       tmap = Map.fromList [ ("UUID", MkAny $ characteristicUUID char)
                           , ("Service", MkAny $ objectPath opath)
                           , ("Flags", MkAny $ characteristicProperties char)
-                          ]  
+                          ]
 
 data CharacteristicProperty
   = CPBroadcast
@@ -144,17 +151,17 @@ instance Representable CharacteristicProperty where
     key <- fromRep x
     let swapped = (\(a,b) -> (b,a)) <$> chrPropPairs
     lookup key swapped
-    
+
 
 chrPropPairs :: [(CharacteristicProperty, T.Text)]
 chrPropPairs =
-  [(CPBroadcast, "broadcast")
-  ,(CPRead, "read")
-  ,(CPWriteWithouResponse, "write-without-response")
-  ,(CPWrite, "write")
-  ,(CPNotify, "notify")
-  ,(CPIndicate, "indicate")
-  ,(CPSignedWriteCommand, "authenticated-signed-writes")
+  [ (CPBroadcast, "broadcast")
+  , (CPRead, "read")
+  , (CPWriteWithouResponse, "write-without-response")
+  , (CPWrite, "write")
+  , (CPNotify, "notify")
+  , (CPIndicate, "indicate")
+  , (CPSignedWriteCommand, "authenticated-signed-writes")
   ]
 
 -- * Descriptor
@@ -176,7 +183,7 @@ data AdvertisingPacketType
 
 -- The constructor should not be exported.
 data Connection = Connection
-  { dbusConn :: DBusConnection
+  { dbusConn  :: DBusConnection
   -- Should it be possible to remove objects?
   , addObject :: ObjectPath -> Object -> IO ()
   }
@@ -215,7 +222,7 @@ instance Representable Any where
 
 -- | Append two Texts, keeping exactly one slash between them.
 (</>) :: T.Text -> T.Text -> T.Text
-a </> b 
+a </> b
   | "/" `T.isSuffixOf` a && "/" `T.isPrefixOf` b = a <> T.tail b
   | "/" `T.isSuffixOf` a || "/" `T.isPrefixOf` b = a <> b
   | otherwise                                    = a <> "/" <> b
