@@ -70,9 +70,12 @@ data Service = Service
 
 
 instance Representable Service where
-  type RepType Service = 'TypeDict 'TypeString 'TypeVariant
-  toRep s = toRep tmap
+  type RepType Service = 'TypeDict 'TypeString ('TypeDict 'TypeString 'TypeVariant)
+  toRep s = toRep (Map.fromList [(gattServiceIFace, tmap)])
     where
+      gattServiceIFace :: T.Text
+      gattServiceIFace = "org.bluez.GattService1"
+      
       tmap :: Map.Map T.Text Any
       tmap = Map.fromList [ ("UUID", MkAny $ serviceUUID s)
                           -- Only primary services for now
