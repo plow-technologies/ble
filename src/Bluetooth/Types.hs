@@ -1,5 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE TemplateHaskell #-}
 module Bluetooth.Types where
 
 
@@ -16,12 +17,15 @@ import Data.Monoid ((<>))
 import Data.String (IsString(fromString))
 import Data.Word (Word16, Word32)
 import GHC.Generics (Generic)
-import Numeric (readHex, showHex)
+import Numeric (readHex)
+import Lens.Micro.TH (makeFields)
 
 import qualified Data.UUID as UUID
 import qualified Data.Map as Map
 import qualified Data.Text as T
 import qualified System.Random as Rand
+
+-- * UUID
 
 -- See <http://www.itu.int/rec/T-REC-X.667/en ITU-T Rec. X.677> for more
 -- information on the format and generation of these UUIDs.
@@ -55,9 +59,11 @@ instance Representable UUID where
 
 instance Rand.Random UUID where
   randomR (UnofficialUUID lo, UnofficialUUID hi) g =
-    let (a', g') = Rand.randomR (lo,hi) g in (UnofficialUUID a', g') 
+    let (a', g') = Rand.randomR (lo,hi) g in (UnofficialUUID a', g')
+  randomR _ g = Rand.random g
   random g = let (a', g') = Rand.random g in (UnofficialUUID a', g')
   
+-- * Application
 
 data Application = Application
   { applicationRoot :: ObjectPath
@@ -68,15 +74,15 @@ instance Representable Application where
   type RepType Application = 'TypeDict 'TypeObjectPath ('TypeDict 'TypeString ('TypeDict 'TypeString 'TypeVariant))
   toRep app = DBVDict $ zipWith servPaths ([0..]::[Int]) $ applicationServices app
     where
-      root = objectPathToText $ applicationRoot app
+      root' = objectPathToText $ applicationRoot app
       servPaths i s = (toRep $ objectPath path, serviceAsDict path s) 
         where
-          path = root </> ("serv" <> T.pack (show i)) 
+          path = root' </> ("serv" <> T.pack (show i)) 
 
-      
+-- * Service
+
 data Service = Service
-  { serviceName :: T.Text
-  , serviceUUID :: UUID
+  { serviceUUID :: UUID
   , serviceCharacteristics :: [Characteristic]
   } deriving (Eq, Show, Generic)
 
@@ -100,7 +106,8 @@ serviceAsDict opath serv
       charPaths :: Int -> [ObjectPath]
       charPaths i = (\x -> objectPath $ opath </> ("char" <> T.pack (show x))) <$> [0..i]  
 
-  
+-- * Characteristic
+
 data Characteristic = Characteristic
   { characteristicUUID :: UUID
   , characteristicProperties :: [CharacteristicProperty]
@@ -150,6 +157,8 @@ chrPropPairs =
   ,(CPSignedWriteCommand, "authenticated-signed-writes")
   ]
 
+-- * Descriptor
+
 data Descriptor
   = ExtendedProperties
   | CharacteristicUserDescription
@@ -162,6 +171,8 @@ data AdvertisingPacketType
   | NonConnnectableUndirected
   | ScannableUndirected
   deriving (Eq, Show, Read, Generic, Ord)
+
+-- * Connection
 
 -- The constructor should not be exported.
 data Connection = Connection
@@ -178,6 +189,8 @@ connect = do
       methodHandler conn hdr val = readIORef ref >>= \f -> objectRoot f conn hdr val
   dbusC <- connectBus System methodHandler noHandler
   return $ Connection dbusC addObj
+
+-- * BluetoothM
 
 newtype BluetoothM a
   = BluetoothM ( ReaderT Connection (ExceptT MethodError IO) a )
@@ -206,3 +219,8 @@ a </> b
   | "/" `T.isSuffixOf` a && "/" `T.isPrefixOf` b = a <> T.tail b
   | "/" `T.isSuffixOf` a || "/" `T.isPrefixOf` b = a <> b
   | otherwise                                    = a <> "/" <> b
+
+-- Lenses
+makeFields ''Application
+makeFields ''Service
+makeFields ''Characteristic

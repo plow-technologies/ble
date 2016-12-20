@@ -27,8 +27,7 @@ testApp = Application
 
 testService :: Service
 testService = Service
-  { serviceName = "test"
-  , serviceUUID = "351930f8-7d31-43c1-92f5-fd2f0eac272f"
+  { serviceUUID = "351930f8-7d31-43c1-92f5-fd2f0eac272f"
   , serviceCharacteristics = []
   }
 

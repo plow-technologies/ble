@@ -5,7 +5,7 @@ import Control.Monad.Reader
 import qualified Data.Text as T
 import qualified Data.Map as Map
 import DBus
-import DBus.Types (object, DBusArguments(..))
+import DBus.Types (object)
 
 -- | Registers an application (set of services) with Bluez.
 registerApplication :: Application -> BluetoothM ()
@@ -52,3 +52,6 @@ bluezPath = "/org/bluez/hci0"
 
 gattManagerIFace :: T.Text
 gattManagerIFace = "org.bluez.GattManager1"
+
+gattServiceIFace :: T.Text
+gattServiceIFace = "org.bluez.GattService1"
