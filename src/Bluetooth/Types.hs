@@ -4,13 +4,10 @@
 module Bluetooth.Types where
 
 
-import Control.Monad 
 import Control.Monad.Except   (ExceptT (ExceptT), MonadError, runExceptT)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Reader   (MonadReader, ReaderT (ReaderT), runReaderT)
-import Data.Bifunctor         (bimap)
 import Data.IORef
-import Data.List              (sortOn)
 import Data.Maybe             (fromMaybe)
 import Data.Monoid            ((<>))
 import Data.String            (IsString (fromString))
@@ -27,9 +24,9 @@ import GHC.Generics           (Generic)
 import Lens.Micro.TH          (makeFields)
 import Numeric                (readHex)
 
+import qualified Data.ByteString as BS
 import qualified Data.Map      as Map
 import qualified Data.Text     as T
-import qualified Data.Text.Read as T
 import qualified Data.UUID     as UUID
 import qualified System.Random as Rand
 
@@ -79,7 +76,7 @@ instance Rand.Random UUID where
 data Application = Application
   { applicationRoot     :: ObjectPath
   , applicationServices :: [Service]
-  } deriving (Eq, Show, Generic)
+  } deriving (Generic)
 
 instance Representable Application where
   type RepType Application
@@ -91,22 +88,15 @@ instance Representable Application where
       servPaths i s = (toRep $ objectPath path, serviceAsDict path s)
         where
           path = root' </> ("serv" <> T.pack (show i))
-  fromRep (DBVDict xs@((r,_):_)) = do
-    let unrepped :: [(Maybe ObjectPath, Maybe Service)]
-        unrepped = fmap (\(a,b) -> (fromRep a, fromRep b)) xs
-    services <- sequence $ [ x | (_,x) <- sortOn fst unrepped]
-    root' <- fromRep r
-    root <- case reverse $ T.splitOn "/" $ objectPathToText root' of
-      x:xs -> Just $ T.intercalate "/" $ reverse xs
-      _ -> Nothing
-    return $ Application (objectPath root) services
+  fromRep _ = error "not implemented"
 
 -- * Service
 
 data Service = Service
   { serviceUUID            :: UUID
   , serviceCharacteristics :: [Characteristic]
-  } deriving (Eq, Show, Generic)
+  } deriving (Generic)
+
 
 
 serviceAsDict :: T.Text -> Service
@@ -133,7 +123,9 @@ serviceAsDict opath serv
 data Characteristic = Characteristic
   { characteristicUUID       :: UUID
   , characteristicProperties :: [CharacteristicProperty]
-  } deriving (Eq, Show, Generic)
+  , characteristicRead       :: Maybe (IO BS.ByteString)
+  , characteristicWrite      :: Maybe (BS.ByteString -> IO BS.ByteString)
+  } deriving (Generic)
 
 characteristicAsDict :: T.Text -> Characteristic
   -> DBusValue ('TypeDict 'TypeString ('TypeDict 'TypeString 'TypeVariant))

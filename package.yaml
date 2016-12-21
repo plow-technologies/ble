@@ -18,6 +18,7 @@ ghc-options: -Wall
 
 dependencies:
   - base >= 4.7 && < 4.10
+  - bytestring
   - text
   - d-bus
   - uuid

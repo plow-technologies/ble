@@ -11,7 +11,6 @@ import Test.QuickCheck
 spec :: Spec
 spec = do
   uuidSpec
-  applicationSpec
   
 uuidSpec :: Spec
 uuidSpec = describe "UUID" $ do
@@ -27,14 +26,6 @@ uuidSpec = describe "UUID" $ do
 
   context "Representable" $ do
     fromRepToRepInverse (Proxy :: Proxy UUID)
-
-applicationSpec :: Spec
-applicationSpec = describe "Application" $ do
-
-  describe "Representable" $ do
-    fromRepToRepInverse (Proxy :: Proxy Application)
-
-    
 
 -- * Utils
 
@@ -62,7 +53,7 @@ instance Arbitrary Service where
   arbitrary = Service <$> arbitrary <*> arbitrary
 
 instance Arbitrary Characteristic where
-  arbitrary = Characteristic <$> arbitrary <*> arbitrary
+  arbitrary = Characteristic <$> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
 
 instance Arbitrary CharacteristicProperty where
   arbitrary = elements [minBound..maxBound]
