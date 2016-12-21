@@ -85,10 +85,18 @@ instance Representable Application where
   toRep app = DBVDict $ zipWith servPaths ([0..]::[Int]) $ applicationServices app
     where
       root' = objectPathToText $ applicationRoot app
-      servPaths i s = (toRep $ objectPath path, serviceAsDict path s)
+      servPaths i s = (toRep path, serviceAsDict s)
         where
-          path = root' </> ("serv" <> T.pack (show i))
+          path = objectPath $ root' </> ("serv" <> T.pack (show i))
+          gattServiceIFace :: T.Text
+          gattServiceIFace = "org.bluez.GattService1"
+          serviceAsDict serv
+            = toRep $ Map.fromList [(gattServiceIFace, WOP path serv)]
   fromRep _ = error "not implemented"
+
+-- Note [WithObjectPath] 
+data WithObjectPath a = WOP { wopOP :: ObjectPath, wopV :: a }
+  deriving (Eq, Show, Generic, Functor)
 
 -- * Service
 
@@ -97,16 +105,11 @@ data Service = Service
   , serviceCharacteristics :: [Characteristic]
   } deriving (Generic)
 
-
-
-serviceAsDict :: T.Text -> Service
-  -> DBusValue ('TypeDict 'TypeString ('TypeDict 'TypeString 'TypeVariant))
-serviceAsDict opath serv
-  = toRep (Map.fromList [(gattServiceIFace, tmap)])
+-- Note [WithObjectPath] 
+instance Representable (WithObjectPath Service) where
+  type RepType (WithObjectPath Service) = 'TypeDict 'TypeString 'TypeVariant
+  toRep (WOP opath serv) = toRep tmap
     where
-      gattServiceIFace :: T.Text
-      gattServiceIFace = "org.bluez.GattService1"
-
       tmap :: Map.Map T.Text Any
       tmap = Map.fromList
         [ ("UUID", MkAny $ serviceUUID serv)
@@ -116,7 +119,8 @@ serviceAsDict opath serv
         ]
 
       charPaths :: Int -> [ObjectPath]
-      charPaths i = (\x -> objectPath $ opath </> ("char" <> T.pack (show x))) <$> [0..i]
+      charPaths i
+        = (\x -> objectPath $ objectPathToText opath </> ("char" <> T.pack (show x))) <$> [0..i]
 
 -- * Characteristic
 
@@ -127,17 +131,23 @@ data Characteristic = Characteristic
   , characteristicWrite      :: Maybe (BS.ByteString -> IO BS.ByteString)
   } deriving (Generic)
 
-characteristicAsDict :: T.Text -> Characteristic
+characteristicAsDict :: ObjectPath -> Characteristic
   -> DBusValue ('TypeDict 'TypeString ('TypeDict 'TypeString 'TypeVariant))
 characteristicAsDict opath char
-  = toRep $ Map.fromList [(gattCharIFace, tmap)]
+  = toRep $ Map.fromList [(gattCharIFace, WOP opath char)]
     where
       gattCharIFace :: T.Text
       gattCharIFace = "org.bluez.GattCharacteristic1"
-
+      
+-- Note [WithObjectPath] 
+instance Representable (WithObjectPath Characteristic) where
+  type RepType (WithObjectPath Characteristic)
+    = 'TypeDict 'TypeString 'TypeVariant
+  toRep (WOP opath char) = toRep tmap
+    where
       tmap :: Map.Map T.Text Any
       tmap = Map.fromList [ ("UUID", MkAny $ characteristicUUID char)
-                          , ("Service", MkAny $ objectPath opath)
+                          , ("Service", MkAny opath)
                           , ("Flags", MkAny $ characteristicProperties char)
                           ]
 
@@ -238,3 +248,22 @@ a </> b
 makeFields ''Application
 makeFields ''Service
 makeFields ''Characteristic
+
+{- Note [WithObjectPath]
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In OOP, which is explicitly the programming model around which
+DBus was designed, methods have access to the object they are
+a method of. Here, we prefer to not unnecessarily tie services,
+characteristics, and descriptors to the data that may have them
+as fields. This makes it possible for different services to have
+the "same" characteristic (e.g.).
+
+But the ObjectPath of each of these types messes up with this,
+since it depends on the 'object' of which this characteristic
+is a property or method.
+
+So we use WithObjectPath to attach ObjectPaths to these values,
+and write instances for Representable for @WithObjectPath a@
+rather than @a@.
+-}
