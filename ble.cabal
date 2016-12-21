@@ -40,8 +40,8 @@ library
   exposed-modules:
       Bluetooth
       Bluetooth.DBus
+      Bluetooth.HasInterface
       Bluetooth.Interface
-      Bluetooth.IsObject
       Bluetooth.Types
   default-language: Haskell2010
 
