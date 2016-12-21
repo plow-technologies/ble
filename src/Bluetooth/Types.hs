@@ -4,10 +4,13 @@
 module Bluetooth.Types where
 
 
+import Control.Monad 
 import Control.Monad.Except   (ExceptT (ExceptT), MonadError, runExceptT)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Reader   (MonadReader, ReaderT (ReaderT), runReaderT)
+import Data.Bifunctor         (bimap)
 import Data.IORef
+import Data.List              (sortOn)
 import Data.Maybe             (fromMaybe)
 import Data.Monoid            ((<>))
 import Data.String            (IsString (fromString))
@@ -26,6 +29,7 @@ import Numeric                (readHex)
 
 import qualified Data.Map      as Map
 import qualified Data.Text     as T
+import qualified Data.Text.Read as T
 import qualified Data.UUID     as UUID
 import qualified System.Random as Rand
 
@@ -62,6 +66,8 @@ instance Representable UUID where
       36 -> UnofficialUUID <$> UUID.fromText s
       _  -> Nothing
 
+-- Random instance only generates unofficial UUIDs, since probably
+-- that's the most common use-case. But this feels a little wrong.
 instance Rand.Random UUID where
   randomR (UnofficialUUID lo, UnofficialUUID hi) g =
     let (a', g') = Rand.randomR (lo,hi) g in (UnofficialUUID a', g')
@@ -85,6 +91,15 @@ instance Representable Application where
       servPaths i s = (toRep $ objectPath path, serviceAsDict path s)
         where
           path = root' </> ("serv" <> T.pack (show i))
+  fromRep (DBVDict xs@((r,_):_)) = do
+    let unrepped :: [(Maybe ObjectPath, Maybe Service)]
+        unrepped = fmap (\(a,b) -> (fromRep a, fromRep b)) xs
+    services <- sequence $ [ x | (_,x) <- sortOn fst unrepped]
+    root' <- fromRep r
+    root <- case reverse $ T.splitOn "/" $ objectPathToText root' of
+      x:xs -> Just $ T.intercalate "/" $ reverse xs
+      _ -> Nothing
+    return $ Application (objectPath root) services
 
 -- * Service
 
@@ -142,7 +157,7 @@ data CharacteristicProperty
   | CPNotify
   | CPIndicate
   | CPSignedWriteCommand
-  deriving (Eq, Show, Read, Ord, Generic)
+  deriving (Eq, Show, Read, Enum, Bounded, Ord, Generic)
 
 instance Representable CharacteristicProperty where
   type RepType CharacteristicProperty = 'DBusSimpleType 'TypeString
