@@ -93,6 +93,7 @@ test-suite spec
     , ble
     , hspec > 2 && < 3
     , QuickCheck >= 2.8 && < 2.9
+    , quickcheck-instances >= 0.3 && < 0.4
   other-modules:
       Bluetooth.TypesSpec
       BluetoothSpec

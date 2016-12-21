@@ -7,6 +7,7 @@ import Data.Proxy (Proxy(Proxy))
 import DBus
 import Test.Hspec
 import Test.QuickCheck
+import Test.QuickCheck.Instances ()
 
 spec :: Spec
 spec = do
@@ -53,7 +54,11 @@ instance Arbitrary Service where
   arbitrary = Service <$> arbitrary <*> arbitrary
 
 instance Arbitrary Characteristic where
-  arbitrary = Characteristic <$> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
+  arbitrary = Characteristic
+    <$> arbitrary
+    <*> arbitrary
+    <*> (fmap return <$> arbitrary)
+    <*> (fmap (fmap return) <$> arbitrary)
 
 instance Arbitrary CharacteristicProperty where
   arbitrary = elements [minBound..maxBound]

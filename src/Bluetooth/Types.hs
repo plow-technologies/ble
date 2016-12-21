@@ -244,6 +244,11 @@ a </> b
   | "/" `T.isSuffixOf` a || "/" `T.isPrefixOf` b = a <> b
   | otherwise                                    = a <> "/" <> b
 
+parentPath :: T.Text -> T.Text
+parentPath p = case reverse $ T.splitOn "/" p of
+  _:xs -> T.intercalate "/" $ reverse xs
+  []   -> "/"
+
 -- Lenses
 makeFields ''Application
 makeFields ''Service
