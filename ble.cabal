@@ -43,6 +43,7 @@ library
       Bluetooth.HasInterface
       Bluetooth.Interface
       Bluetooth.Types
+      Bluetooth.Utils
   default-language: Haskell2010
 
 test-suite doctest

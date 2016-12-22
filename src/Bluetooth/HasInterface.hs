@@ -1,10 +1,13 @@
 module Bluetooth.HasInterface where
 
+import Prelude hiding (read)
 import GHC.TypeLits
 import Bluetooth.Types
+import Bluetooth.Utils
 import DBus
 import DBus.Types (object, methodError)
 import Data.Proxy
+import Lens.Micro
 import qualified Data.Text as T
 
 -- The Bluez DBus API makes certain requirements about the interfaces
@@ -120,17 +123,17 @@ instance HasInterface (WithObjectPath Service) GattService where
     where
       uuid :: Property (RepType UUID)
       uuid = Property
-        { propertyPath = objectPath $ objectPathToText (wopOP service) </> "UUID"
+        { propertyPath = objectPath $ (service ^. path . toText) </> "UUID"
         , propertyInterface = T.pack gattServiceIFace
         , propertyName = "UUID"
-        , propertyGet = Just . return . toRep . serviceUUID $ wopV service
+        , propertyGet = Just . return $ toRep (service ^. value . uuid)
         , propertySet = Nothing
         , propertyEmitsChangedSignal = PECSFalse
         }
         
       primary :: Property (RepType Bool)
       primary = Property
-        { propertyPath = objectPath $ objectPathToText (wopOP service) </> "Primary"
+        { propertyPath = objectPath $ (service ^. path . toText) </> "Primary"
         , propertyInterface = T.pack gattServiceIFace
         , propertyName = "Primary"
         , propertyGet = Just . return $ toRep True
@@ -159,11 +162,11 @@ instance HasInterface (WithObjectPath Characteristic) GattCharacteristic where
       notSup :: MethodHandlerT IO ()
       notSup = methodError notSupported
       
-      readValue = case characteristicRead $ wopV char of
+      readValue = case char ^. value . read of
         Just v -> Method (repMethod v) "ReadValue" Done ("rep" :> Done)
         Nothing -> Method (repMethod notSup) "ReadValue" Done Done
         
-      writeValue = case characteristicWrite $ wopV char of
+      writeValue = case char ^. value . write of
         Just v -> Method (repMethod v) "ReadValue" ("arg" :> Done) ("rep" :> Done)
         Nothing -> Method (repMethod notSup) "ReadValue" Done Done
         
@@ -176,31 +179,30 @@ instance HasInterface (WithObjectPath Characteristic) GattCharacteristic where
 
       uuid :: Property (RepType UUID)
       uuid = Property
-        { propertyPath = objectPath $ objectPathToText (wopOP char) </> "UUID"
+        { propertyPath = objectPath $ (char ^. path . toText) </> "UUID"
         , propertyInterface = T.pack gattCharacteristicIFace
         , propertyName = "UUID"
-        , propertyGet = Just . return . toRep . characteristicUUID $ wopV char
+        , propertyGet = Just . return . toRep $ char ^. value . uuid
         , propertySet = Nothing
         , propertyEmitsChangedSignal = PECSFalse
         }
         
       service :: Property (RepType ObjectPath)
       service = Property
-        { propertyPath = objectPath $ objectPathToText (wopOP char) </> "Service"
+        { propertyPath = objectPath $ (char ^. path . toText) </> "Service"
         , propertyInterface = T.pack gattCharacteristicIFace
         , propertyName = "Service"
-        , propertyGet = Just . return . toRep . objectPath . parentPath . objectPathToText
-            $ wopOP char 
+        , propertyGet = Just . return . toRep . objectPath . parentPath $ char ^. path . toText 
         , propertySet = Nothing
         , propertyEmitsChangedSignal = PECSFalse
         }
         
       flags :: Property (RepType [CharacteristicProperty])
       flags = Property
-        { propertyPath = objectPath $ objectPathToText (wopOP char) </> "Flags"
+        { propertyPath = objectPath $ (char ^. path . toText) </> "Flags"
         , propertyInterface = T.pack gattCharacteristicIFace
         , propertyName = "Flags"
-        , propertyGet = Just . return . toRep . characteristicProperties $ wopV char
+        , propertyGet = Just . return . toRep $ char ^. value . properties
         , propertySet = Nothing
         , propertyEmitsChangedSignal = PECSFalse
         }
@@ -222,4 +224,3 @@ notSupported = MsgError
   , errorText = Nothing
   , errorBody = []
   }
-           

@@ -4,6 +4,7 @@
 module Bluetooth.Types where
 
 
+import Bluetooth.Utils
 import Control.Monad.Except   (ExceptT (ExceptT), MonadError, runExceptT)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Reader   (MonadReader, ReaderT (ReaderT), runReaderT)
@@ -30,6 +31,20 @@ import qualified Data.Map      as Map
 import qualified Data.Text     as T
 import qualified Data.UUID     as UUID
 import qualified System.Random as Rand
+
+
+-- | Append two Texts, keeping exactly one slash between them.
+(</>) :: T.Text -> T.Text -> T.Text
+a </> b
+  | "/" `T.isSuffixOf` a && "/" `T.isPrefixOf` b = a <> T.tail b
+  | "/" `T.isSuffixOf` a || "/" `T.isPrefixOf` b = a <> b
+  | otherwise                                    = a <> "/" <> b
+
+parentPath :: T.Text -> T.Text
+parentPath p = case reverse $ T.splitOn "/" p of
+  _:xs -> T.intercalate "/" $ reverse xs
+  []   -> "/"
+
 
 -- * UUID
 
@@ -71,6 +86,26 @@ instance Rand.Random UUID where
     let (a', g') = Rand.randomR (lo,hi) g in (UnofficialUUID a', g')
   randomR _ g = Rand.random g
   random g = let (a', g') = Rand.random g in (UnofficialUUID a', g')
+
+-- * Any
+
+-- | A Haskell existential type corresponding to DBus' @Variant@.
+data Any where
+  MkAny :: forall a . Representable a => a -> Any
+
+instance Representable Any where
+  type RepType Any = 'TypeVariant
+  toRep (MkAny x) = DBVVariant (toRep x)
+  fromRep (DBVVariant x) = Just (MkAny x)
+
+-- Note [WithObjectPath] 
+data WithObjectPath a = WOP
+  { withObjectPathPath :: ObjectPath
+  , withObjectPathValue :: a
+  } deriving (Eq, Show, Generic, Functor)
+
+makeFields ''WithObjectPath
+
   
 -- * Descriptor
 
@@ -120,7 +155,7 @@ chrPropPairs =
   ]
 
 data Characteristic = Characteristic
-  { characteristicUUID       :: UUID
+  { characteristicUuid       :: UUID
   , characteristicProperties :: [CharacteristicProperty]
   , characteristicRead       :: Maybe (IO BS.ByteString)
   , characteristicWrite      :: Maybe (BS.ByteString -> IO BS.ByteString)
@@ -140,22 +175,50 @@ characteristicAsDict opath char
 instance Representable (WithObjectPath Characteristic) where
   type RepType (WithObjectPath Characteristic)
     = 'TypeDict 'TypeString 'TypeVariant
-  toRep (WOP opath char) = toRep tmap
+  toRep char = toRep tmap
     where
       tmap :: Map.Map T.Text Any
-      tmap = Map.fromList [ ("UUID", MkAny $ characteristicUUID char)
-                          , ("Service", MkAny opath)
-                          , ("Flags", MkAny $ characteristicProperties char)
+      tmap = Map.fromList [ ("UUID", MkAny $ char ^. value . uuid)
+                          , ("Service", MkAny $ char ^. path)
+                          , ("Flags", MkAny $ char ^. value . properties)
                           ]
+
+-- * Service
+
+data Service = Service
+  { serviceUuid            :: UUID
+  , serviceCharacteristics :: [Characteristic]
+  } deriving (Generic)
+
+makeFields ''Service
+
+-- Note [WithObjectPath] 
+instance Representable (WithObjectPath Service) where
+  type RepType (WithObjectPath Service) = 'TypeDict 'TypeString 'TypeVariant
+  toRep serv = toRep tmap
+    where
+      tmap :: Map.Map T.Text Any
+      tmap = Map.fromList
+        [ ("UUID", MkAny $ serv ^. value . uuid )
+        -- Only primary services for now
+        , ("Primary", MkAny $ True)
+        , ("Characteristics", MkAny (charPaths . length $ serv ^. value . characteristics))
+        ]
+
+      charPaths :: Int -> [ObjectPath]
+      charPaths i
+        = (\x -> objectPath $ (serv ^. path . toText) </> ("char" <> T.pack (show x))) <$> [0..i]
 
 
 
 -- * Application
 
 data Application = Application
-  { applicationObjectPath :: ObjectPath
-  , applicationServices   :: [Service]
+  { applicationPath     :: ObjectPath
+  , applicationServices :: [Service]
   } deriving (Generic)
+
+makeFields ''Application
 
 instance Representable Application where
   type RepType Application
@@ -163,7 +226,7 @@ instance Representable Application where
                 ('TypeDict 'TypeString ('TypeDict 'TypeString 'TypeVariant))
   toRep app = DBVDict $ zipWith servPaths ([0..]::[Int]) $ applicationServices app
     where
-      root' = objectPathToText $ applicationRoot app
+      root' = objectPathToText $ app ^. path
       servPaths i s = (toRep path, serviceAsDict s)
         where
           path = objectPath $ root' </> ("serv" <> T.pack (show i))
@@ -173,37 +236,6 @@ instance Representable Application where
             = toRep $ Map.fromList [(gattServiceIFace, WOP path serv)]
   fromRep _ = error "not implemented"
 
--- Note [WithObjectPath] 
-data WithObjectPath a = WOP
-  { withObjectPathObjectPath :: ObjectPath
-  , withObjectPathValue :: a
-  } deriving (Eq, Show, Generic, Functor)
-
-makeFields ''WithObjectPath
-
--- * Service
-
-data Service = Service
-  { serviceUUID            :: UUID
-  , serviceCharacteristics :: [Characteristic]
-  } deriving (Generic)
-
--- Note [WithObjectPath] 
-instance Representable (WithObjectPath Service) where
-  type RepType (WithObjectPath Service) = 'TypeDict 'TypeString 'TypeVariant
-  toRep (WOP opath serv) = toRep tmap
-    where
-      tmap :: Map.Map T.Text Any
-      tmap = Map.fromList
-        [ ("UUID", MkAny $ serviceUUID serv)
-        -- Only primary services for now
-        , ("Primary", MkAny $ True)
-        , ("Characteristics", MkAny (charPaths . length $ serviceCharacteristics serv))
-        ]
-
-      charPaths :: Int -> [ObjectPath]
-      charPaths i
-        = (\x -> objectPath $ objectPathToText opath </> ("char" <> T.pack (show x))) <$> [0..i]
 
 
 -- * Connection
@@ -237,32 +269,7 @@ runBluetoothM (BluetoothM e) conn = runExceptT $ runReaderT e conn
 toBluetoothM :: (Connection -> IO (Either MethodError a)) -> BluetoothM a
 toBluetoothM = BluetoothM . ReaderT . fmap ExceptT
 
--- | A Haskell existential type corresponding to DBus' @Variant@.
-data Any where
-  MkAny :: forall a . Representable a => a -> Any
 
-instance Representable Any where
-  type RepType Any = 'TypeVariant
-  toRep (MkAny x) = DBVVariant (toRep x)
-  fromRep (DBVVariant x) = Just (MkAny x)
-
-
--- | Append two Texts, keeping exactly one slash between them.
-(</>) :: T.Text -> T.Text -> T.Text
-a </> b
-  | "/" `T.isSuffixOf` a && "/" `T.isPrefixOf` b = a <> T.tail b
-  | "/" `T.isSuffixOf` a || "/" `T.isPrefixOf` b = a <> b
-  | otherwise                                    = a <> "/" <> b
-
-parentPath :: T.Text -> T.Text
-parentPath p = case reverse $ T.splitOn "/" p of
-  _:xs -> T.intercalate "/" $ reverse xs
-  []   -> "/"
-
--- Lenses
-makeFields ''Application
-makeFields ''Service
-makeFields ''Characteristic
 
 {- Note [WithObjectPath]
 ~~~~~~~~~~~~~~~~~~~~~~~~~
