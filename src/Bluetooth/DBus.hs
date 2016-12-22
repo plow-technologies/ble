@@ -44,10 +44,8 @@ advertise adv = do
     addObject conn (adv ^. path) (adv `withInterface` leAdvertisementIFaceP)
     addObject conn (adv ^. path) ((adv ^. value) `withInterface` propertiesIFaceP)
   toBluetoothM . const $ do
-    res <- callMethod bluezName bluezPath leAdvertisingManagerIFace "RegisterAdvertisement"  args []
+    callMethod bluezName bluezPath leAdvertisingManagerIFace "RegisterAdvertisement" args []
       $ dbusConn conn
-    print res
-    return res
   where
     args :: (ObjectPath, Map.Map T.Text Any)
     args = (adv ^. path, Map.empty)

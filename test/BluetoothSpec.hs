@@ -26,8 +26,6 @@ advertiseSpec = describe "advertise" $ beforeAll connect $ do
   it "adverstises a set of services" $ \conn -> do
     Right () <- runBluetoothM (registerApplication testApp) conn
     v <- runBluetoothM (advertise testAdv) conn
-    print $ toRep $ testAdv ^. value
-    --   threadDelay maxBound
     v `shouldBe` Right ()
 
 

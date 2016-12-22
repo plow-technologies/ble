@@ -100,7 +100,7 @@ instance HasInterface (WithObjectPath Characteristic) Properties where
        where
          go :: T.Text -> MethodHandlerT IO (WithObjectPath Characteristic)
          go iface
-           | iface == "org.bluez.GattCharacteristic1" = return char
+           | iface == T.pack gattCharacteristicIFace = return char
            | otherwise = methodError invalidArgs
 
 instance HasInterface Advertisement Properties where
@@ -120,12 +120,12 @@ instance HasInterface Advertisement Properties where
        where
          go :: T.Text -> MethodHandlerT IO Advertisement
          go iface
-           | iface == "org.bluez.LEAdvertisement1" = return adv
+           | iface == T.pack leAdvertisementIFace = return adv
            | otherwise = methodError invalidArgs
 
 -- * GattService
 
-type GattService = "org.Bluez.GattService1"
+type GattService = "org.bluez.GattService1"
 gattServiceIFaceP :: Proxy GattService
 gattServiceIFaceP = Proxy
 
@@ -163,7 +163,7 @@ instance HasInterface (WithObjectPath Service) GattService where
 
 -- * GattCharacteristic
 
-type GattCharacteristic = "org.Bluez.GattCharacteristic1"
+type GattCharacteristic = "org.bluez.GattCharacteristic1"
 gattCharacteristicIFaceP :: Proxy GattCharacteristic
 gattCharacteristicIFaceP = Proxy
 
@@ -231,7 +231,7 @@ instance HasInterface (WithObjectPath Characteristic) GattCharacteristic where
         , propertyEmitsChangedSignal = PECSFalse
         }
 
-type LEAdvertisement = "org.Bluez.LLAdvertisement1"
+type LEAdvertisement = "org.bluez.LEAdvertisement1"
 leAdvertisementIFaceP :: Proxy LEAdvertisement
 leAdvertisementIFaceP = Proxy
 
