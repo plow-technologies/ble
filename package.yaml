@@ -27,6 +27,7 @@ dependencies:
   - random
   - microlens
   - microlens-th
+  - cereal
 
 default-extensions:
   - AutoDeriveTypeable

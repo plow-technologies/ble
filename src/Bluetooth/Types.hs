@@ -14,7 +14,7 @@ import Data.Monoid            ((<>))
 import Data.String            (IsString (fromString))
 import Data.Word              (Word16, Word32)
 import DBus                   (ConnectionType (System), DBusConnection,
-                               DBusSimpleType (..),
+                               DBusSimpleType (..), MethodHandlerT,
                                DBusType (DBusSimpleType, TypeDict, TypeVariant),
                                DBusValue (DBVDict, DBVVariant), MethodError,
                                Object, ObjectPath, Representable (..),
@@ -157,8 +157,8 @@ chrPropPairs =
 data Characteristic = Characteristic
   { characteristicUuid       :: UUID
   , characteristicProperties :: [CharacteristicProperty]
-  , characteristicRead       :: Maybe (IO BS.ByteString)
-  , characteristicWrite      :: Maybe (BS.ByteString -> IO BS.ByteString)
+  , characteristicReadValue  :: Maybe (MethodHandlerT IO BS.ByteString)
+  , characteristicWriteValue :: Maybe (BS.ByteString -> MethodHandlerT IO BS.ByteString)
   } deriving (Generic)
 
 makeFields ''Characteristic
@@ -171,6 +171,9 @@ characteristicAsDict opath char
       gattCharIFace :: T.Text
       gattCharIFace = "org.bluez.GattCharacteristic1"
       
+instance IsString Characteristic where
+  fromString x = Characteristic (fromString x) [] Nothing Nothing
+      
 -- Note [WithObjectPath] 
 instance Representable (WithObjectPath Characteristic) where
   type RepType (WithObjectPath Characteristic)
@@ -182,6 +185,10 @@ instance Representable (WithObjectPath Characteristic) where
                           , ("Service", MkAny $ char ^. path)
                           , ("Flags", MkAny $ char ^. value . properties)
                           ]
+characteristicObjectPath :: ObjectPath -> Int -> ObjectPath
+characteristicObjectPath appOPath idx = appOPath & toText %~ addSuffix 
+  where
+    addSuffix r = r </> ("char" <> T.pack (show idx))
 
 -- * Service
 
@@ -191,6 +198,9 @@ data Service = Service
   } deriving (Generic)
 
 makeFields ''Service
+
+instance IsString Service where
+  fromString x = Service (fromString x) []
 
 -- Note [WithObjectPath] 
 instance Representable (WithObjectPath Service) where
@@ -220,23 +230,29 @@ data Application = Application
 
 makeFields ''Application
 
+instance IsString Application where
+  fromString x = Application (fromString x) []
+
 instance Representable Application where
   type RepType Application
     = 'TypeDict 'TypeObjectPath
                 ('TypeDict 'TypeString ('TypeDict 'TypeString 'TypeVariant))
   toRep app = DBVDict $ zipWith servPaths ([0..]::[Int]) $ applicationServices app
     where
-      root' = objectPathToText $ app ^. path
-      servPaths i s = (toRep path, serviceAsDict s)
+      servPaths i s = (toRep path', serviceAsDict s)
         where
-          path = objectPath $ root' </> ("serv" <> T.pack (show i))
+          path' = serviceObjectPath (app ^. path) i
           gattServiceIFace :: T.Text
           gattServiceIFace = "org.bluez.GattService1"
           serviceAsDict serv
-            = toRep $ Map.fromList [(gattServiceIFace, WOP path serv)]
+            = toRep $ Map.fromList [(gattServiceIFace, WOP path' serv)]
   fromRep _ = error "not implemented"
 
 
+serviceObjectPath :: ObjectPath -> Int -> ObjectPath
+serviceObjectPath appOPath idx = appOPath & toText %~ addSuffix 
+  where
+    addSuffix r = r </> ("serv" <> T.pack (show idx))
 
 -- * Connection
 

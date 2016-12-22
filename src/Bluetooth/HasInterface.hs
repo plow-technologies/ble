@@ -1,6 +1,5 @@
 module Bluetooth.HasInterface where
 
-import Prelude hiding (read)
 import GHC.TypeLits
 import Bluetooth.Types
 import Bluetooth.Utils
@@ -118,11 +117,11 @@ instance HasInterface (WithObjectPath Service) GattService where
       { interfaceMethods = []
       , interfaceSignals = []
       , interfaceAnnotations = []
-      , interfaceProperties = [SomeProperty uuid, SomeProperty primary]
+      , interfaceProperties = [SomeProperty uuid', SomeProperty primary]
       }
     where
-      uuid :: Property (RepType UUID)
-      uuid = Property
+      uuid' :: Property (RepType UUID)
+      uuid' = Property
         { propertyPath = objectPath $ (service ^. path . toText) </> "UUID"
         , propertyInterface = T.pack gattServiceIFace
         , propertyName = "UUID"
@@ -153,20 +152,20 @@ gattCharacteristicIFace = symbolVal gattServiceIFaceP
 instance HasInterface (WithObjectPath Characteristic) GattCharacteristic where
   getInterface char _ =
     Interface
-      { interfaceMethods = [readValue, writeValue, startNotify, stopNotify]
+      { interfaceMethods = [readVal, writeVal, startNotify, stopNotify]
       , interfaceSignals = []
       , interfaceAnnotations = []
-      , interfaceProperties = [SomeProperty uuid, SomeProperty service, SomeProperty flags]
+      , interfaceProperties = [SomeProperty uuid', SomeProperty service, SomeProperty flags]
       }
     where
       notSup :: MethodHandlerT IO ()
       notSup = methodError notSupported
       
-      readValue = case char ^. value . read of
+      readVal = case char ^. value . readValue of
         Just v -> Method (repMethod v) "ReadValue" Done ("rep" :> Done)
         Nothing -> Method (repMethod notSup) "ReadValue" Done Done
         
-      writeValue = case char ^. value . write of
+      writeVal = case char ^. value . writeValue of
         Just v -> Method (repMethod v) "ReadValue" ("arg" :> Done) ("rep" :> Done)
         Nothing -> Method (repMethod notSup) "ReadValue" Done Done
         
@@ -177,8 +176,8 @@ instance HasInterface (WithObjectPath Characteristic) GattCharacteristic where
           go :: MethodHandlerT IO ()
           go = return ()
 
-      uuid :: Property (RepType UUID)
-      uuid = Property
+      uuid' :: Property (RepType UUID)
+      uuid' = Property
         { propertyPath = objectPath $ (char ^. path . toText) </> "UUID"
         , propertyInterface = T.pack gattCharacteristicIFace
         , propertyName = "UUID"

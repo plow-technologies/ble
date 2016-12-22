@@ -37,11 +37,12 @@ library
     , random
     , microlens
     , microlens-th
+    , cereal
   exposed-modules:
       Bluetooth
       Bluetooth.DBus
       Bluetooth.HasInterface
-      Bluetooth.Interface
+      Bluetooth.Serialize
       Bluetooth.Types
       Bluetooth.Utils
   default-language: Haskell2010
@@ -64,6 +65,7 @@ test-suite doctest
     , random
     , microlens
     , microlens-th
+    , cereal
     , doctest >= 0.9 && < 0.12
     , Glob >= 0.7 && < 0.8
     , yaml == 0.8.*
@@ -91,6 +93,7 @@ test-suite spec
     , random
     , microlens
     , microlens-th
+    , cereal
     , ble
     , hspec > 2 && < 3
     , QuickCheck >= 2.8 && < 2.9
