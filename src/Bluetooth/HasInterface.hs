@@ -28,8 +28,10 @@ withInterface o p = object (T.pack i) $ getInterface o p
 -- * ObjectManager
 
 type ObjectManager = "org.freedesktop.DBus.ObjectManager"
-objectManagerIFace :: Proxy ObjectManager
-objectManagerIFace = Proxy
+objectManagerIFaceP :: Proxy ObjectManager
+objectManagerIFaceP = Proxy
+objectManagerIFace :: String
+objectManagerIFace = symbolVal objectManagerIFaceP
 
 
 instance HasInterface Application ObjectManager where
@@ -52,8 +54,10 @@ instance HasInterface Application ObjectManager where
 -- * Properties
 
 type Properties    = "org.freedesktop.DBus.Properties"
-propertiesIFace :: Proxy Properties
-propertiesIFace = Proxy
+propertiesIFaceP :: Proxy Properties
+propertiesIFaceP = Proxy
+propertiesIFace :: String
+propertiesIFace = symbolVal propertiesIFaceP
 
 instance HasInterface (WithObjectPath Service) Properties where
   getInterface service _ =

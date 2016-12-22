@@ -7,21 +7,29 @@ import qualified Data.Map             as Map
 import           Data.Proxy     
 import qualified Data.Text            as T
 import           DBus
+import           Lens.Micro
 
 
 -- | Registers an application (set of services) with Bluez.
 registerApplication :: Application -> BluetoothM ()
 registerApplication app = do
-  conn <- asks dbusConn
-  addObj <- asks addObject
-  -- The top-level application needs to present an ObjectManager interface
-  liftIO $ addObj (applicationRoot app) (app `withInterface` objectManagerIFace)
+  conn <- ask
+  addAllObjs conn app
   toBluetoothM . const
-    $ callMethod bluezName bluezPath gattManagerIFace "RegisterApplication"  args [] conn
+    $ callMethod bluezName bluezPath gattManagerIFace "RegisterApplication"  args []
+    $ dbusConn conn
   where
     args :: (ObjectPath, Map.Map T.Text Any)
-    args = (applicationRoot app, Map.empty)
+    args = (app ^. root, Map.empty)
 
+-- | Adds handlers for all the objects managed by the Application (plus the
+-- Application itself).
+addAllObjs :: Connection -> Application -> BluetoothM ()
+addAllObjs conn app = do
+  liftIO $ addObject conn (app ^. root) (app `withInterface` objectManagerIFaceP)
+  liftIO $ forM_ (app ^. services) $ \s -> do
+    addObject conn s (s `withInterface` gattServiceIFaceP)
+    
 
 -- * Constants
 

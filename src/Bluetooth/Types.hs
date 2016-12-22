@@ -21,6 +21,7 @@ import DBus                   (ConnectionType (System), DBusConnection,
                                objectRoot)
 import DBus.Types             (root)
 import GHC.Generics           (Generic)
+import Lens.Micro
 import Lens.Micro.TH          (makeFields)
 import Numeric                (readHex)
 
@@ -70,86 +71,23 @@ instance Rand.Random UUID where
     let (a', g') = Rand.randomR (lo,hi) g in (UnofficialUUID a', g')
   randomR _ g = Rand.random g
   random g = let (a', g') = Rand.random g in (UnofficialUUID a', g')
+  
+-- * Descriptor
 
--- * Application
+data Descriptor
+  = ExtendedProperties
+  | CharacteristicUserDescription
+  | ClientCharacteristicConfiguration
+  deriving (Eq, Show, Read, Generic, Ord)
 
-data Application = Application
-  { applicationRoot     :: ObjectPath
-  , applicationServices :: [Service]
-  } deriving (Generic)
-
-instance Representable Application where
-  type RepType Application
-    = 'TypeDict 'TypeObjectPath
-                ('TypeDict 'TypeString ('TypeDict 'TypeString 'TypeVariant))
-  toRep app = DBVDict $ zipWith servPaths ([0..]::[Int]) $ applicationServices app
-    where
-      root' = objectPathToText $ applicationRoot app
-      servPaths i s = (toRep path, serviceAsDict s)
-        where
-          path = objectPath $ root' </> ("serv" <> T.pack (show i))
-          gattServiceIFace :: T.Text
-          gattServiceIFace = "org.bluez.GattService1"
-          serviceAsDict serv
-            = toRep $ Map.fromList [(gattServiceIFace, WOP path serv)]
-  fromRep _ = error "not implemented"
-
--- Note [WithObjectPath] 
-data WithObjectPath a = WOP { wopOP :: ObjectPath, wopV :: a }
-  deriving (Eq, Show, Generic, Functor)
-
--- * Service
-
-data Service = Service
-  { serviceUUID            :: UUID
-  , serviceCharacteristics :: [Characteristic]
-  } deriving (Generic)
-
--- Note [WithObjectPath] 
-instance Representable (WithObjectPath Service) where
-  type RepType (WithObjectPath Service) = 'TypeDict 'TypeString 'TypeVariant
-  toRep (WOP opath serv) = toRep tmap
-    where
-      tmap :: Map.Map T.Text Any
-      tmap = Map.fromList
-        [ ("UUID", MkAny $ serviceUUID serv)
-        -- Only primary services for now
-        , ("Primary", MkAny $ True)
-        , ("Characteristics", MkAny (charPaths . length $ serviceCharacteristics serv))
-        ]
-
-      charPaths :: Int -> [ObjectPath]
-      charPaths i
-        = (\x -> objectPath $ objectPathToText opath </> ("char" <> T.pack (show x))) <$> [0..i]
-
+data AdvertisingPacketType
+  = ConnectableUndirected
+  | ConnectableDirected
+  | NonConnnectableUndirected
+  | ScannableUndirected
+  deriving (Eq, Show, Read, Generic, Ord)
+  
 -- * Characteristic
-
-data Characteristic = Characteristic
-  { characteristicUUID       :: UUID
-  , characteristicProperties :: [CharacteristicProperty]
-  , characteristicRead       :: Maybe (IO BS.ByteString)
-  , characteristicWrite      :: Maybe (BS.ByteString -> IO BS.ByteString)
-  } deriving (Generic)
-
-characteristicAsDict :: ObjectPath -> Characteristic
-  -> DBusValue ('TypeDict 'TypeString ('TypeDict 'TypeString 'TypeVariant))
-characteristicAsDict opath char
-  = toRep $ Map.fromList [(gattCharIFace, WOP opath char)]
-    where
-      gattCharIFace :: T.Text
-      gattCharIFace = "org.bluez.GattCharacteristic1"
-      
--- Note [WithObjectPath] 
-instance Representable (WithObjectPath Characteristic) where
-  type RepType (WithObjectPath Characteristic)
-    = 'TypeDict 'TypeString 'TypeVariant
-  toRep (WOP opath char) = toRep tmap
-    where
-      tmap :: Map.Map T.Text Any
-      tmap = Map.fromList [ ("UUID", MkAny $ characteristicUUID char)
-                          , ("Service", MkAny opath)
-                          , ("Flags", MkAny $ characteristicProperties char)
-                          ]
 
 data CharacteristicProperty
   = CPBroadcast
@@ -181,20 +119,92 @@ chrPropPairs =
   , (CPSignedWriteCommand, "authenticated-signed-writes")
   ]
 
--- * Descriptor
+data Characteristic = Characteristic
+  { characteristicUUID       :: UUID
+  , characteristicProperties :: [CharacteristicProperty]
+  , characteristicRead       :: Maybe (IO BS.ByteString)
+  , characteristicWrite      :: Maybe (BS.ByteString -> IO BS.ByteString)
+  } deriving (Generic)
 
-data Descriptor
-  = ExtendedProperties
-  | CharacteristicUserDescription
-  | ClientCharacteristicConfiguration
-  deriving (Eq, Show, Read, Generic, Ord)
+makeFields ''Characteristic
 
-data AdvertisingPacketType
-  = ConnectableUndirected
-  | ConnectableDirected
-  | NonConnnectableUndirected
-  | ScannableUndirected
-  deriving (Eq, Show, Read, Generic, Ord)
+characteristicAsDict :: ObjectPath -> Characteristic
+  -> DBusValue ('TypeDict 'TypeString ('TypeDict 'TypeString 'TypeVariant))
+characteristicAsDict opath char
+  = toRep $ Map.fromList [(gattCharIFace, WOP opath char)]
+    where
+      gattCharIFace :: T.Text
+      gattCharIFace = "org.bluez.GattCharacteristic1"
+      
+-- Note [WithObjectPath] 
+instance Representable (WithObjectPath Characteristic) where
+  type RepType (WithObjectPath Characteristic)
+    = 'TypeDict 'TypeString 'TypeVariant
+  toRep (WOP opath char) = toRep tmap
+    where
+      tmap :: Map.Map T.Text Any
+      tmap = Map.fromList [ ("UUID", MkAny $ characteristicUUID char)
+                          , ("Service", MkAny opath)
+                          , ("Flags", MkAny $ characteristicProperties char)
+                          ]
+
+
+
+-- * Application
+
+data Application = Application
+  { applicationObjectPath :: ObjectPath
+  , applicationServices   :: [Service]
+  } deriving (Generic)
+
+instance Representable Application where
+  type RepType Application
+    = 'TypeDict 'TypeObjectPath
+                ('TypeDict 'TypeString ('TypeDict 'TypeString 'TypeVariant))
+  toRep app = DBVDict $ zipWith servPaths ([0..]::[Int]) $ applicationServices app
+    where
+      root' = objectPathToText $ applicationRoot app
+      servPaths i s = (toRep path, serviceAsDict s)
+        where
+          path = objectPath $ root' </> ("serv" <> T.pack (show i))
+          gattServiceIFace :: T.Text
+          gattServiceIFace = "org.bluez.GattService1"
+          serviceAsDict serv
+            = toRep $ Map.fromList [(gattServiceIFace, WOP path serv)]
+  fromRep _ = error "not implemented"
+
+-- Note [WithObjectPath] 
+data WithObjectPath a = WOP
+  { withObjectPathObjectPath :: ObjectPath
+  , withObjectPathValue :: a
+  } deriving (Eq, Show, Generic, Functor)
+
+makeFields ''WithObjectPath
+
+-- * Service
+
+data Service = Service
+  { serviceUUID            :: UUID
+  , serviceCharacteristics :: [Characteristic]
+  } deriving (Generic)
+
+-- Note [WithObjectPath] 
+instance Representable (WithObjectPath Service) where
+  type RepType (WithObjectPath Service) = 'TypeDict 'TypeString 'TypeVariant
+  toRep (WOP opath serv) = toRep tmap
+    where
+      tmap :: Map.Map T.Text Any
+      tmap = Map.fromList
+        [ ("UUID", MkAny $ serviceUUID serv)
+        -- Only primary services for now
+        , ("Primary", MkAny $ True)
+        , ("Characteristics", MkAny (charPaths . length $ serviceCharacteristics serv))
+        ]
+
+      charPaths :: Int -> [ObjectPath]
+      charPaths i
+        = (\x -> objectPath $ objectPathToText opath </> ("char" <> T.pack (show x))) <$> [0..i]
+
 
 -- * Connection
 
