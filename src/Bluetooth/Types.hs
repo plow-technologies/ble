@@ -8,18 +8,18 @@ import Bluetooth.Utils
 import Control.Monad.Except   (ExceptT (ExceptT), MonadError, runExceptT)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Reader   (MonadReader, ReaderT (ReaderT), runReaderT)
-import Data.Default.Class     (Default(def))
+import Data.Default.Class     (Default (def))
 import Data.IORef
 import Data.Maybe             (fromMaybe)
 import Data.Monoid            ((<>))
 import Data.String            (IsString (fromString))
 import Data.Word              (Word16, Word32)
 import DBus                   (ConnectionType (System), DBusConnection,
-                               DBusSimpleType (..), MethodHandlerT,
+                               DBusSimpleType (..),
                                DBusType (DBusSimpleType, TypeDict, TypeVariant),
                                DBusValue (DBVDict, DBVVariant), MethodError,
-                               Object, ObjectPath, Representable (..),
-                               connectBus, objectPath, objectPathToText,
+                               MethodHandlerT, Object, ObjectPath,
+                               Representable (..), connectBus, objectPath,
                                objectRoot)
 import DBus.Types             (root)
 import GHC.Generics           (Generic)
@@ -28,10 +28,10 @@ import Lens.Micro.TH          (makeFields)
 import Numeric                (readHex)
 
 import qualified Data.ByteString as BS
-import qualified Data.Map      as Map
-import qualified Data.Text     as T
-import qualified Data.UUID     as UUID
-import qualified System.Random as Rand
+import qualified Data.Map        as Map
+import qualified Data.Text       as T
+import qualified Data.UUID       as UUID
+import qualified System.Random   as Rand
 
 
 -- | Append two Texts, keeping exactly one slash between them.
@@ -99,15 +99,15 @@ instance Representable Any where
   toRep (MkAny x) = DBVVariant (toRep x)
   fromRep (DBVVariant x) = Just (MkAny x)
 
--- Note [WithObjectPath] 
+-- Note [WithObjectPath]
 data WithObjectPath a = WOP
-  { withObjectPathPath :: ObjectPath
+  { withObjectPathPath  :: ObjectPath
   , withObjectPathValue :: a
   } deriving (Eq, Show, Generic, Functor)
 
 makeFields ''WithObjectPath
 
-  
+
 -- * Descriptor
 
 data Descriptor
@@ -122,7 +122,7 @@ data AdvertisingPacketType
   | NonConnnectableUndirected
   | ScannableUndirected
   deriving (Eq, Show, Read, Generic, Ord)
-  
+
 -- * Characteristic
 
 data CharacteristicProperty
@@ -171,11 +171,11 @@ characteristicAsDict opath char
     where
       gattCharIFace :: T.Text
       gattCharIFace = "org.bluez.GattCharacteristic1"
-      
+
 instance IsString Characteristic where
   fromString x = Characteristic (fromString x) [] Nothing Nothing
-      
--- Note [WithObjectPath] 
+
+-- Note [WithObjectPath]
 instance Representable (WithObjectPath Characteristic) where
   type RepType (WithObjectPath Characteristic)
     = 'TypeDict 'TypeString 'TypeVariant
@@ -187,7 +187,7 @@ instance Representable (WithObjectPath Characteristic) where
                           , ("Flags", MkAny $ char ^. value . properties)
                           ]
 characteristicObjectPath :: ObjectPath -> Int -> ObjectPath
-characteristicObjectPath appOPath idx = appOPath & toText %~ addSuffix 
+characteristicObjectPath appOPath idx = appOPath & toText %~ addSuffix
   where
     addSuffix r = r </> ("char" <> T.pack (show idx))
 
@@ -203,7 +203,7 @@ makeFields ''Service
 instance IsString Service where
   fromString x = Service (fromString x) []
 
--- Note [WithObjectPath] 
+-- Note [WithObjectPath]
 instance Representable (WithObjectPath Service) where
   type RepType (WithObjectPath Service) = 'TypeDict 'TypeString 'TypeVariant
   toRep serv = toRep tmap
@@ -251,7 +251,7 @@ instance Representable Application where
 
 
 serviceObjectPath :: ObjectPath -> Int -> ObjectPath
-serviceObjectPath appOPath idx = appOPath & toText %~ addSuffix 
+serviceObjectPath appOPath idx = appOPath & toText %~ addSuffix
   where
     addSuffix r = r </> ("serv" <> T.pack (show idx))
 
@@ -267,12 +267,12 @@ instance Representable AdvertisementType where
     Peripheral -> toRep ("peripheral" :: T.Text)
 
 data Advertisement = Advertisement
-  { advertisementType_ :: AdvertisementType
-  , advertisementServiceUUIDs :: [UUID]
-  , advertisementSolicitUUIDs :: [UUID]
+  { advertisementType_            :: AdvertisementType
+  , advertisementServiceUUIDs     :: [UUID]
+  , advertisementSolicitUUIDs     :: [UUID]
   , advertisementManufacturerData :: Map.Map T.Text T.Text
-  , advertisementServiceData :: Map.Map UUID T.Text
-  , advertisementIncludeTxPower :: Bool
+  , advertisementServiceData      :: Map.Map UUID T.Text
+  , advertisementIncludeTxPower   :: Bool
   } deriving (Eq, Show, Generic)
 
 makeFields ''Advertisement

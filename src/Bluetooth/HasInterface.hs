@@ -1,15 +1,15 @@
 module Bluetooth.HasInterface where
 
-import GHC.TypeLits
 import Bluetooth.Types
 import Bluetooth.Utils
-import DBus
-import DBus.Types (object, methodError)
 import Data.Proxy
+import DBus
+import DBus.Types      (methodError, object)
+import GHC.TypeLits
 import Lens.Micro
 
+import qualified Data.Map  as Map
 import qualified Data.Text as T
-import qualified Data.Map as Map
 
 -- The Bluez DBus API makes certain requirements about the interfaces
 -- that objects must meet. These requirements are outlined in:
@@ -71,18 +71,18 @@ instance HasInterface (WithObjectPath Service) Properties where
       , interfaceAnnotations = []
       , interfaceProperties = []
       }
-    where  
+    where
      getAll
        = Method (repMethod go)
                 "GetAll"
-                ("inteface" :> Done)
+                ("interface" :> Done)
                 ("rep" :> Done)
        where
          go :: T.Text -> MethodHandlerT IO (WithObjectPath Service)
          go iface
            | iface == "org.bluez.GattService1" = return service
            | otherwise = methodError invalidArgs
-           
+
 instance HasInterface (WithObjectPath Characteristic) Properties where
   getInterface char _ =
     Interface
@@ -91,18 +91,37 @@ instance HasInterface (WithObjectPath Characteristic) Properties where
       , interfaceAnnotations = []
       , interfaceProperties = []
       }
-    where  
+    where
      getAll
        = Method (repMethod go)
                 "GetAll"
-                ("inteface" :> Done)
+                ("interface" :> Done)
                 ("rep" :> Done)
        where
          go :: T.Text -> MethodHandlerT IO (WithObjectPath Characteristic)
          go iface
-           | iface == "org.bluez.GattService1" = return char
+           | iface == "org.bluez.GattCharacteristic1" = return char
            | otherwise = methodError invalidArgs
 
+instance HasInterface Advertisement Properties where
+  getInterface adv _ =
+    Interface
+      { interfaceMethods = [getAll]
+      , interfaceSignals = []
+      , interfaceAnnotations = []
+      , interfaceProperties = []
+      }
+    where
+     getAll
+       = Method (repMethod go)
+                "GetAll"
+                ("interface" :> Done)
+                ("rep" :> Done)
+       where
+         go :: T.Text -> MethodHandlerT IO Advertisement
+         go iface
+           | iface == "org.bluez.LEAdvertisement1" = return adv
+           | otherwise = methodError invalidArgs
 
 -- * GattService
 
@@ -131,7 +150,7 @@ instance HasInterface (WithObjectPath Service) GattService where
         , propertySet = Nothing
         , propertyEmitsChangedSignal = PECSFalse
         }
-        
+
       primary :: Property (RepType Bool)
       primary = Property
         { propertyPath = objectPath $ (service ^. path . toText) </> "Primary"
@@ -141,7 +160,7 @@ instance HasInterface (WithObjectPath Service) GattService where
         , propertySet = Nothing
         , propertyEmitsChangedSignal = PECSFalse
         }
-        
+
 -- * GattCharacteristic
 
 type GattCharacteristic = "org.Bluez.GattCharacteristic1"
@@ -157,22 +176,25 @@ instance HasInterface (WithObjectPath Characteristic) GattCharacteristic where
       { interfaceMethods = [readVal, writeVal, startNotify, stopNotify]
       , interfaceSignals = []
       , interfaceAnnotations = []
-      , interfaceProperties = [SomeProperty uuid', SomeProperty service, SomeProperty flags]
+      , interfaceProperties = [ SomeProperty uuid'
+                              , SomeProperty service
+                              , SomeProperty flags
+                              ]
       }
     where
       notSup :: MethodHandlerT IO ()
       notSup = methodError notSupported
-      
+
       readVal = case char ^. value . readValue of
         Just v -> Method (repMethod v) "ReadValue" Done ("rep" :> Done)
         Nothing -> Method (repMethod notSup) "ReadValue" Done Done
-        
+
       writeVal = case char ^. value . writeValue of
         Just v -> Method (repMethod v) "ReadValue" ("arg" :> Done) ("rep" :> Done)
         Nothing -> Method (repMethod notSup) "ReadValue" Done Done
-        
+
       stopNotify = Method (repMethod notSup) "StopNotify" Done Done
-          
+
       startNotify = Method (repMethod go) "StartNotify" Done Done
         where
           go :: MethodHandlerT IO ()
@@ -187,17 +209,18 @@ instance HasInterface (WithObjectPath Characteristic) GattCharacteristic where
         , propertySet = Nothing
         , propertyEmitsChangedSignal = PECSFalse
         }
-        
+
       service :: Property (RepType ObjectPath)
       service = Property
         { propertyPath = objectPath $ (char ^. path . toText) </> "Service"
         , propertyInterface = T.pack gattCharacteristicIFace
         , propertyName = "Service"
-        , propertyGet = Just . return . toRep . objectPath . parentPath $ char ^. path . toText 
+        , propertyGet = Just . return . toRep . objectPath . parentPath
+            $ char ^. path . toText
         , propertySet = Nothing
         , propertyEmitsChangedSignal = PECSFalse
         }
-        
+
       flags :: Property (RepType [CharacteristicProperty])
       flags = Property
         { propertyPath = objectPath $ (char ^. path . toText) </> "Flags"
@@ -230,7 +253,7 @@ instance HasInterface (WithObjectPath Advertisement) LEAdvertisement where
       }
     where
       release = Method (repMethod (return () :: IO ())) "Release" Done Done
-      
+
       type' :: Property (RepType AdvertisementType)
       type' = Property
         { propertyPath = objectPath $ (adv ^. path . toText) </> "Type"
@@ -240,7 +263,7 @@ instance HasInterface (WithObjectPath Advertisement) LEAdvertisement where
         , propertySet = Nothing
         , propertyEmitsChangedSignal = PECSFalse
         }
-        
+
       serviceUUIDs' :: Property (RepType [UUID])
       serviceUUIDs' = Property
         { propertyPath = objectPath $ (adv ^. path . toText) </> "ServiceUUIDs"
@@ -250,7 +273,7 @@ instance HasInterface (WithObjectPath Advertisement) LEAdvertisement where
         , propertySet = Nothing
         , propertyEmitsChangedSignal = PECSFalse
         }
-        
+
       solicitUUIDs' :: Property (RepType [UUID])
       solicitUUIDs' = Property
         { propertyPath = objectPath $ (adv ^. path . toText) </> "SolicitUUIDs"
@@ -260,7 +283,7 @@ instance HasInterface (WithObjectPath Advertisement) LEAdvertisement where
         , propertySet = Nothing
         , propertyEmitsChangedSignal = PECSFalse
         }
-        
+
       manufacturerData' :: Property (RepType (Map.Map T.Text T.Text))
       manufacturerData' = Property
         { propertyPath = objectPath $ (adv ^. path . toText) </> "ManufacturerData"
@@ -270,8 +293,8 @@ instance HasInterface (WithObjectPath Advertisement) LEAdvertisement where
         , propertySet = Nothing
         , propertyEmitsChangedSignal = PECSFalse
         }
-        
-      serviceData' :: Property (RepType (Map.Map T.Text T.Text))
+
+      serviceData' :: Property (RepType (Map.Map UUID T.Text))
       serviceData' = Property
         { propertyPath = objectPath $ (adv ^. path . toText) </> "ServiceData"
         , propertyInterface = T.pack leAdvertisementIFace
@@ -291,9 +314,9 @@ instance HasInterface (WithObjectPath Advertisement) LEAdvertisement where
         , propertyEmitsChangedSignal = PECSFalse
         }
 
-        
 
-      
+
+
 -- * Utils
 
 
@@ -303,7 +326,7 @@ invalidArgs = MsgError
   , errorText = Nothing
   , errorBody = []
   }
-  
+
 notSupported :: MsgError
 notSupported = MsgError
   { errorName = "org.bluez.Error.NotSupported"

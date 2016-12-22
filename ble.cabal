@@ -28,17 +28,17 @@ library
   ghc-options: -Wall
   build-depends:
       base >= 4.7 && < 4.10
-    , bytestring
-    , text
-    , d-bus
-    , uuid
-    , mtl
-    , containers
-    , random
-    , microlens
-    , microlens-th
-    , cereal
-    , data-default-class
+    , bytestring >= 0.10 && < 0.11
+    , text >= 1 && < 2
+    , d-bus >= 0.1 && < 0.2
+    , uuid >= 1 && < 2
+    , mtl >= 2.2 && < 2.3
+    , containers >= 0.5 && < 0.6
+    , random >= 1 && < 2
+    , microlens >= 0.4 && < 0.5
+    , microlens-th >= 0.4 && < 0.5
+    , cereal >= 0.5 && < 0.6
+    , data-default-class >= 0.1 && < 0.2
   exposed-modules:
       Bluetooth
       Bluetooth.DBus
@@ -48,61 +48,34 @@ library
       Bluetooth.Utils
   default-language: Haskell2010
 
-test-suite doctest
-  type: exitcode-stdio-1.0
-  main-is: Doctest.hs
-  hs-source-dirs:
-      test
-  default-extensions: AutoDeriveTypeable ConstraintKinds DataKinds DefaultSignatures DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable FlexibleContexts FlexibleInstances FunctionalDependencies GADTs KindSignatures MultiParamTypeClasses OverloadedStrings RankNTypes ScopedTypeVariables TypeFamilies TypeOperators
-  ghc-options: -Wall
-  build-depends:
-      base >= 4.7 && < 4.10
-    , bytestring
-    , text
-    , d-bus
-    , uuid
-    , mtl
-    , containers
-    , random
-    , microlens
-    , microlens-th
-    , cereal
-    , data-default-class
-    , doctest >= 0.9 && < 0.12
-    , Glob >= 0.7 && < 0.8
-    , yaml == 0.8.*
-  other-modules:
-      Bluetooth.TypesSpec
-      BluetoothSpec
-      Spec
-  default-language: Haskell2010
-
 test-suite spec
   type: exitcode-stdio-1.0
-  main-is: Spec.hs
+  main-is: Main.hs
   hs-source-dirs:
       test
   default-extensions: AutoDeriveTypeable ConstraintKinds DataKinds DefaultSignatures DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable FlexibleContexts FlexibleInstances FunctionalDependencies GADTs KindSignatures MultiParamTypeClasses OverloadedStrings RankNTypes ScopedTypeVariables TypeFamilies TypeOperators
   ghc-options: -Wall
   build-depends:
       base >= 4.7 && < 4.10
-    , bytestring
-    , text
-    , d-bus
-    , uuid
-    , mtl
-    , containers
-    , random
-    , microlens
-    , microlens-th
-    , cereal
-    , data-default-class
+    , bytestring >= 0.10 && < 0.11
+    , text >= 1 && < 2
+    , d-bus >= 0.1 && < 0.2
+    , uuid >= 1 && < 2
+    , mtl >= 2.2 && < 2.3
+    , containers >= 0.5 && < 0.6
+    , random >= 1 && < 2
+    , microlens >= 0.4 && < 0.5
+    , microlens-th >= 0.4 && < 0.5
+    , cereal >= 0.5 && < 0.6
+    , data-default-class >= 0.1 && < 0.2
     , ble
     , hspec > 2 && < 3
     , QuickCheck >= 2.8 && < 2.9
     , quickcheck-instances >= 0.3 && < 0.4
+    , hslogger
   other-modules:
       Bluetooth.TypesSpec
       BluetoothSpec
       Doctest
+      Spec
   default-language: Haskell2010

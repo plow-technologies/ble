@@ -18,17 +18,17 @@ ghc-options: -Wall
 
 dependencies:
   - base >= 4.7 && < 4.10
-  - bytestring
-  - text
-  - d-bus
-  - uuid
-  - mtl
-  - containers
-  - random
-  - microlens
-  - microlens-th
-  - cereal
-  - data-default-class
+  - bytestring >= 0.10 && < 0.11
+  - text >= 1 && < 2
+  - d-bus >= 0.1 && < 0.2
+  - uuid >= 1 && < 2
+  - mtl >= 2.2 && < 2.3
+  - containers >= 0.5 && < 0.6
+  - random >= 1 && < 2
+  - microlens >= 0.4 && < 0.5
+  - microlens-th >= 0.4 && < 0.5
+  - cereal >= 0.5 && < 0.6
+  - data-default-class >= 0.1 && < 0.2
 
 default-extensions:
   - AutoDeriveTypeable
@@ -57,18 +57,18 @@ library:
 
 tests:
   spec:
-    main:            Spec.hs
+    main:            Main.hs
     source-dirs:     test
     dependencies:
       - ble
       - hspec > 2 && < 3
       - QuickCheck >= 2.8 && < 2.9
       - quickcheck-instances >= 0.3 && < 0.4
-  doctest:
-    main:            Doctest.hs
-    source-dirs:     test
-    dependencies:
-      - doctest >= 0.9 && < 0.12
-      - Glob >= 0.7 && < 0.8
-      - yaml == 0.8.*
-
+      - hslogger
+#   doctest:
+#     main:            Doctest.hs
+#     source-dirs:     test
+#     dependencies:
+#       - doctest >= 0.9 && < 0.12
+#       - Glob >= 0.7 && < 0.8
+#       - yaml == 0.8.*
