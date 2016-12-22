@@ -1,10 +1,10 @@
 module Bluetooth.DBus where
 
+import           Bluetooth.Utils
 import           Bluetooth.Types
 import           Bluetooth.HasInterface
 import           Control.Monad.Reader
 import qualified Data.Map             as Map
-import           Data.Proxy     
 import qualified Data.Text            as T
 import           DBus
 import           Lens.Micro
@@ -33,8 +33,25 @@ addAllObjs conn app = do
     forM_ (zip [0..] (s ^. characteristics)) $ \(i', c) -> do
       let p' = characteristicObjectPath p i'
       addObject conn p' (WOP p' c `withInterface` gattCharacteristicIFaceP)
-    
 
+advertise :: WithObjectPath Advertisement -> BluetoothM ()
+advertise adv = do
+  conn <- ask
+  liftIO $ addObject conn (adv ^. path) (adv `withInterface` leAdvertisementIFaceP)
+  toBluetoothM . const
+    $ callMethod bluezName bluezPath leAdvertisingManagerIFace "RegisterAdvertisement"  args []
+    $ dbusConn conn
+  where
+    args :: (ObjectPath, Map.Map T.Text Any)
+    args = (adv ^. path, Map.empty)
+
+    
+advertisementFor :: Application -> WithObjectPath Advertisement
+advertisementFor app = WOP p adv
+  where
+    adv = def & serviceUUIDs .~ (app ^.. services . traversed . uuid)
+    p = app ^. path & toText %~ (</> "adv")
+    
 -- * Constants
 
 bluezName :: T.Text
@@ -48,3 +65,6 @@ gattManagerIFace = "org.bluez.GattManager1"
 
 gattServiceIFace :: T.Text
 gattServiceIFace = "org.bluez.GattService1"
+
+leAdvertisingManagerIFace :: T.Text
+leAdvertisingManagerIFace = "org.bluez.LEAdvertisingManager1"

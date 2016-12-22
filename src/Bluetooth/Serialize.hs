@@ -6,6 +6,9 @@ import qualified Data.Text as T
 import qualified Data.ByteString as BS
 import qualified Data.Serialize as S
 
+
+-- This is no good, since we need annotations for the *monad* of the original
+-- type.
 class Encoded original encoded | original -> encoded where
   encoded :: original -> encoded
 

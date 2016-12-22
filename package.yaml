@@ -28,6 +28,7 @@ dependencies:
   - microlens
   - microlens-th
   - cereal
+  - data-default-class
 
 default-extensions:
   - AutoDeriveTypeable

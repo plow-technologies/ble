@@ -38,6 +38,7 @@ library
     , microlens
     , microlens-th
     , cereal
+    , data-default-class
   exposed-modules:
       Bluetooth
       Bluetooth.DBus
@@ -66,6 +67,7 @@ test-suite doctest
     , microlens
     , microlens-th
     , cereal
+    , data-default-class
     , doctest >= 0.9 && < 0.12
     , Glob >= 0.7 && < 0.8
     , yaml == 0.8.*
@@ -94,6 +96,7 @@ test-suite spec
     , microlens
     , microlens-th
     , cereal
+    , data-default-class
     , ble
     , hspec > 2 && < 3
     , QuickCheck >= 2.8 && < 2.9

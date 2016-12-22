@@ -7,7 +7,9 @@ import DBus
 import DBus.Types (object, methodError)
 import Data.Proxy
 import Lens.Micro
+
 import qualified Data.Text as T
+import qualified Data.Map as Map
 
 -- The Bluez DBus API makes certain requirements about the interfaces
 -- that objects must meet. These requirements are outlined in:
@@ -205,7 +207,92 @@ instance HasInterface (WithObjectPath Characteristic) GattCharacteristic where
         , propertySet = Nothing
         , propertyEmitsChangedSignal = PECSFalse
         }
+
+type LEAdvertisement = "org.Bluez.LLAdvertisement1"
+leAdvertisementIFaceP :: Proxy LEAdvertisement
+leAdvertisementIFaceP = Proxy
+
+leAdvertisementIFace :: String
+leAdvertisementIFace = symbolVal leAdvertisementIFaceP
+
+instance HasInterface (WithObjectPath Advertisement) LEAdvertisement where
+  getInterface adv _ =
+    Interface
+      { interfaceMethods = [release]
+      , interfaceSignals = []
+      , interfaceAnnotations = []
+      , interfaceProperties = [ SomeProperty type'
+                              , SomeProperty serviceUUIDs'
+                              , SomeProperty manufacturerData'
+                              , SomeProperty solicitUUIDs'
+                              , SomeProperty serviceData'
+                              , SomeProperty includeTxPower']
+      }
+    where
+      release = Method (repMethod (return () :: IO ())) "Release" Done Done
+      
+      type' :: Property (RepType AdvertisementType)
+      type' = Property
+        { propertyPath = objectPath $ (adv ^. path . toText) </> "Type"
+        , propertyInterface = T.pack leAdvertisementIFace
+        , propertyName = "Type"
+        , propertyGet = Just . return . toRep $ adv ^. value . type_
+        , propertySet = Nothing
+        , propertyEmitsChangedSignal = PECSFalse
+        }
         
+      serviceUUIDs' :: Property (RepType [UUID])
+      serviceUUIDs' = Property
+        { propertyPath = objectPath $ (adv ^. path . toText) </> "ServiceUUIDs"
+        , propertyInterface = T.pack leAdvertisementIFace
+        , propertyName = "ServiceUUIDs"
+        , propertyGet = Just . return . toRep $ adv ^. value . serviceUUIDs
+        , propertySet = Nothing
+        , propertyEmitsChangedSignal = PECSFalse
+        }
+        
+      solicitUUIDs' :: Property (RepType [UUID])
+      solicitUUIDs' = Property
+        { propertyPath = objectPath $ (adv ^. path . toText) </> "SolicitUUIDs"
+        , propertyInterface = T.pack leAdvertisementIFace
+        , propertyName = "SolicitUUIDs"
+        , propertyGet = Just . return . toRep $ adv ^. value . solicitUUIDs
+        , propertySet = Nothing
+        , propertyEmitsChangedSignal = PECSFalse
+        }
+        
+      manufacturerData' :: Property (RepType (Map.Map T.Text T.Text))
+      manufacturerData' = Property
+        { propertyPath = objectPath $ (adv ^. path . toText) </> "ManufacturerData"
+        , propertyInterface = T.pack leAdvertisementIFace
+        , propertyName = "ManufacturerData"
+        , propertyGet = Just . return . toRep $ adv ^. value . manufacturerData
+        , propertySet = Nothing
+        , propertyEmitsChangedSignal = PECSFalse
+        }
+        
+      serviceData' :: Property (RepType (Map.Map T.Text T.Text))
+      serviceData' = Property
+        { propertyPath = objectPath $ (adv ^. path . toText) </> "ServiceData"
+        , propertyInterface = T.pack leAdvertisementIFace
+        , propertyName = "ServiceData"
+        , propertyGet = Just . return . toRep $ adv ^. value . serviceData
+        , propertySet = Nothing
+        , propertyEmitsChangedSignal = PECSFalse
+        }
+
+      includeTxPower' :: Property (RepType Bool)
+      includeTxPower' = Property
+        { propertyPath = objectPath $ (adv ^. path . toText) </> "IncludeTxPower"
+        , propertyInterface = T.pack leAdvertisementIFace
+        , propertyName = "IncludeTxPower"
+        , propertyGet = Just . return . toRep $ adv ^. value . includeTxPower
+        , propertySet = Nothing
+        , propertyEmitsChangedSignal = PECSFalse
+        }
+
+        
+
       
 -- * Utils
 

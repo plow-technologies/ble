@@ -6,9 +6,12 @@ import DBus
 import Lens.Micro
 import Test.Hspec
 
+import Control.Concurrent
+
 spec :: Spec
 spec = do
   registerApplicationSpec
+  advertiseSpec
 
 registerApplicationSpec :: Spec
 registerApplicationSpec = describe "registerApplication" $ beforeAll connect $ do
@@ -17,6 +20,14 @@ registerApplicationSpec = describe "registerApplication" $ beforeAll connect $ d
     v <- runBluetoothM (registerApplication testApp) conn
     v `shouldBe` Right ()
 
+advertiseSpec :: Spec
+advertiseSpec = describe "advertise" $ beforeAll connect $ do
+
+  it "adverstises a set of services" $ \conn -> do
+    v <- runBluetoothM (advertise testAdv) conn
+    --   threadDelay maxBound
+    v `shouldBe` Right ()
+    
 
 -- * Test service
 
@@ -33,8 +44,11 @@ testService
 testCharacteristic :: Characteristic
 testCharacteristic
   = "cdcb58aa-7e4c-4d22-b0bf-a90cd67ba60b"
-      & readValue .~ encoded (return True)
+      & readValue .~ Just (encoded (return True :: MethodHandlerT IO Bool))
 
+testAdv :: WithObjectPath Advertisement
+testAdv = advertisementFor testApp
+  
 -- * Orphans
 
 instance Eq MethodError where

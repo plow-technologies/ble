@@ -8,6 +8,7 @@ import Bluetooth.Utils
 import Control.Monad.Except   (ExceptT (ExceptT), MonadError, runExceptT)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Reader   (MonadReader, ReaderT (ReaderT), runReaderT)
+import Data.Default.Class     (Default(def))
 import Data.IORef
 import Data.Maybe             (fromMaybe)
 import Data.Monoid            ((<>))
@@ -55,7 +56,7 @@ data UUID
   | OfficialUUID32 Word32
   -- Custom services use 128-bit identifiers
   | UnofficialUUID UUID.UUID
-  deriving (Eq, Show, Generic)
+  deriving (Eq, Show, Ord, Generic)
 
 instance IsString UUID where
   fromString x
@@ -253,6 +254,47 @@ serviceObjectPath :: ObjectPath -> Int -> ObjectPath
 serviceObjectPath appOPath idx = appOPath & toText %~ addSuffix 
   where
     addSuffix r = r </> ("serv" <> T.pack (show idx))
+
+-- * Advertisement
+
+data AdvertisementType = Broadcast | Peripheral
+  deriving (Eq, Show, Read, Generic, Bounded, Enum)
+
+instance Representable AdvertisementType where
+  type RepType AdvertisementType = 'DBusSimpleType 'TypeString
+  toRep x = case x of
+    Broadcast -> toRep ("broadcast" :: T.Text)
+    Peripheral -> toRep ("peripheral" :: T.Text)
+
+data Advertisement = Advertisement
+  { advertisementType_ :: AdvertisementType
+  , advertisementServiceUUIDs :: [UUID]
+  , advertisementSolicitUUIDs :: [UUID]
+  , advertisementManufacturerData :: Map.Map T.Text T.Text
+  , advertisementServiceData :: Map.Map UUID T.Text
+  , advertisementIncludeTxPower :: Bool
+  } deriving (Eq, Show, Generic)
+
+makeFields ''Advertisement
+
+instance Representable Advertisement where
+  type RepType Advertisement = 'TypeDict 'TypeString 'TypeVariant
+  toRep adv = toRep m
+    where
+      m :: Map.Map T.Text Any
+      m = Map.fromList
+        [ ("Type", MkAny $ adv ^. type_)
+        , ("ServiceUUIDs", MkAny $ adv ^. serviceUUIDs)
+        , ("SolicitUUIDs", MkAny $ adv ^. solicitUUIDs)
+        , ("ManufacturerData", MkAny $ adv ^. manufacturerData)
+        , ("ServiceData", MkAny $ adv ^. serviceData)
+        , ("IncludeTxPower", MkAny $ adv ^. includeTxPower)
+        ]
+
+instance Default Advertisement where
+  def = Advertisement Peripheral [] [] mempty mempty False
+
+
 
 -- * Connection
 
