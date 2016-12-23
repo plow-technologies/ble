@@ -1,8 +1,5 @@
 module Bluetooth.DBus where
 
-import Bluetooth.HasInterface
-import Bluetooth.Types
-import Bluetooth.Utils
 import Control.Monad.Reader
 import DBus
 import Lens.Micro
@@ -10,13 +7,18 @@ import Lens.Micro
 import qualified Data.Map  as Map
 import qualified Data.Text as T
 
+import Bluetooth.HasInterface
+import Bluetooth.Interfaces
+import Bluetooth.Types
+import Bluetooth.Utils
+
 -- | Registers an application (set of services) with Bluez.
 registerApplication :: Application -> BluetoothM ()
 registerApplication app = do
   conn <- ask
   addAllObjs conn app
   toBluetoothM . const
-    $ callMethod bluezName bluezPath gattManagerIFace "RegisterApplication"  args []
+    $ callMethod bluezName bluezPath (T.pack gattManagerIFace) "RegisterApplication"  args []
     $ dbusConn conn
   where
     args :: (ObjectPath, Map.Map T.Text Any)
@@ -44,7 +46,7 @@ advertise adv = do
     addObject conn (adv ^. path) (adv `withInterface` leAdvertisementIFaceP)
     addObject conn (adv ^. path) ((adv ^. value) `withInterface` propertiesIFaceP)
   toBluetoothM . const $ do
-    callMethod bluezName bluezPath leAdvertisingManagerIFace "RegisterAdvertisement" args []
+    callMethod bluezName bluezPath (T.pack leAdvertisingManagerIFace) "RegisterAdvertisement" args []
       $ dbusConn conn
   where
     args :: (ObjectPath, Map.Map T.Text Any)
@@ -65,12 +67,3 @@ bluezName = "org.bluez"
 
 bluezPath :: ObjectPath
 bluezPath = "/org/bluez/hci0"
-
-gattManagerIFace :: T.Text
-gattManagerIFace = "org.bluez.GattManager1"
-
-gattServiceIFace :: T.Text
-gattServiceIFace = "org.bluez.GattService1"
-
-leAdvertisingManagerIFace :: T.Text
-leAdvertisingManagerIFace = "org.bluez.LEAdvertisingManager1"

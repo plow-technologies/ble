@@ -1,10 +1,10 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE UndecidableInstances       #-}
+{-# LANGUAGE StandaloneDeriving       #-}
 module Bluetooth.Types where
 
 
-import Bluetooth.Utils
 import Control.Monad.Except   (ExceptT (ExceptT), MonadError, runExceptT)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Reader   (MonadReader, ReaderT (ReaderT), runReaderT)
@@ -33,6 +33,8 @@ import qualified Data.Text       as T
 import qualified Data.UUID       as UUID
 import qualified System.Random   as Rand
 
+import Bluetooth.Interfaces
+import Bluetooth.Utils
 
 -- | Append two Texts, keeping exactly one slash between them.
 (</>) :: T.Text -> T.Text -> T.Text
@@ -92,7 +94,7 @@ instance Rand.Random UUID where
 
 -- | A Haskell existential type corresponding to DBus' @Variant@.
 data Any where
-  MkAny :: forall a . Representable a => a -> Any
+  MkAny :: forall a . (Representable a) => a -> Any
 
 instance Representable Any where
   type RepType Any = 'TypeVariant
@@ -167,10 +169,7 @@ makeFields ''Characteristic
 characteristicAsDict :: ObjectPath -> Characteristic
   -> DBusValue ('TypeDict 'TypeString ('TypeDict 'TypeString 'TypeVariant))
 characteristicAsDict opath char
-  = toRep $ Map.fromList [(gattCharIFace, WOP opath char)]
-    where
-      gattCharIFace :: T.Text
-      gattCharIFace = "org.bluez.GattCharacteristic1"
+  = toRep $ Map.fromList [(T.pack gattCharacteristicIFace, WOP opath char)]
 
 instance IsString Characteristic where
   fromString x = Characteristic (fromString x) [] Nothing Nothing
@@ -189,7 +188,13 @@ instance Representable (WithObjectPath Characteristic) where
 characteristicObjectPath :: ObjectPath -> Int -> ObjectPath
 characteristicObjectPath appOPath idx = appOPath & toText %~ addSuffix
   where
-    addSuffix r = r </> ("char" <> T.pack (show idx))
+    fourDigits = T.pack $ case show idx of
+      [a] -> ['0','0','0',a]
+      [a,b] -> ['0','0',a,b]
+      [a,b,c] -> ['0',a,b,c]
+      [a,b,c,d] -> [a,b,c,d]
+      _ -> error "maximum 9999 characteristics"
+    addSuffix r = r </> ("char" <> fourDigits)
 
 -- * Service
 
@@ -218,7 +223,7 @@ instance Representable (WithObjectPath Service) where
 
       charPaths :: Int -> [ObjectPath]
       charPaths i
-        = (\x -> objectPath $ (serv ^. path . toText) </> ("char" <> T.pack (show x))) <$> [0..i]
+        = characteristicObjectPath (objectPath $ serv ^. path . toText) <$> [0..]
 
 
 
@@ -238,22 +243,24 @@ instance Representable Application where
   type RepType Application
     = 'TypeDict 'TypeObjectPath
                 ('TypeDict 'TypeString ('TypeDict 'TypeString 'TypeVariant))
-  toRep app = DBVDict $ zipWith servPaths ([0..]::[Int]) $ applicationServices app
+  toRep app = DBVDict $ zipWith servPaths ([0..]::[Int]) $ app ^. services
     where
       servPaths i s = (toRep path', serviceAsDict s)
         where
           path' = serviceObjectPath (app ^. path) i
-          gattServiceIFace :: T.Text
-          gattServiceIFace = "org.bluez.GattService1"
           serviceAsDict serv
-            = toRep $ Map.fromList [(gattServiceIFace, WOP path' serv)]
+            = toRep $ Map.fromList [(T.pack gattServiceIFace, WOP path' serv)]
   fromRep _ = error "not implemented"
 
 
 serviceObjectPath :: ObjectPath -> Int -> ObjectPath
 serviceObjectPath appOPath idx = appOPath & toText %~ addSuffix
   where
-    addSuffix r = r </> ("serv" <> T.pack (show idx))
+    twoDigits = T.pack $ case show idx of
+      [a] -> ['0', a]
+      [a,b] -> [a, b]
+      _ -> error "maximum 99 services"
+    addSuffix r = r </> ("service" <> twoDigits)
 
 -- * Advertisement
 
@@ -271,9 +278,9 @@ data Advertisement = Advertisement
   , advertisementServiceUUIDs     :: [UUID]
   , advertisementSolicitUUIDs     :: [UUID]
   , advertisementManufacturerData :: Map.Map T.Text T.Text
-  , advertisementServiceData      :: Map.Map UUID T.Text
+  , advertisementServiceData      :: Map.Map UUID BS.ByteString
   , advertisementIncludeTxPower   :: Bool
-  } deriving (Eq, Show, Generic)
+  } deriving (Generic)
 
 makeFields ''Advertisement
 

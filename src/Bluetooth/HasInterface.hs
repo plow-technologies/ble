@@ -1,15 +1,20 @@
 module Bluetooth.HasInterface where
 
-import Bluetooth.Types
-import Bluetooth.Utils
+
+import Control.Monad.IO.Class
 import Data.Proxy
 import DBus
-import DBus.Types      (methodError, object)
+import DBus.Types   (methodError, object)
 import GHC.TypeLits
 import Lens.Micro
 
 import qualified Data.Map  as Map
 import qualified Data.Text as T
+import qualified Data.ByteString as BS
+
+import Bluetooth.Interfaces
+import Bluetooth.Types
+import Bluetooth.Utils
 
 -- The Bluez DBus API makes certain requirements about the interfaces
 -- that objects must meet. These requirements are outlined in:
@@ -31,12 +36,6 @@ withInterface o p = object (T.pack i) $ getInterface o p
 
 -- * ObjectManager
 
-type ObjectManager = "org.freedesktop.DBus.ObjectManager"
-objectManagerIFaceP :: Proxy ObjectManager
-objectManagerIFaceP = Proxy
-objectManagerIFace :: String
-objectManagerIFace = symbolVal objectManagerIFaceP
-
 
 instance HasInterface Application ObjectManager where
   getInterface app _ =
@@ -57,11 +56,6 @@ instance HasInterface Application ObjectManager where
 
 -- * Properties
 
-type Properties    = "org.freedesktop.DBus.Properties"
-propertiesIFaceP :: Proxy Properties
-propertiesIFaceP = Proxy
-propertiesIFace :: String
-propertiesIFace = symbolVal propertiesIFaceP
 
 instance HasInterface (WithObjectPath Service) Properties where
   getInterface service _ =
@@ -80,7 +74,9 @@ instance HasInterface (WithObjectPath Service) Properties where
        where
          go :: T.Text -> MethodHandlerT IO (WithObjectPath Service)
          go iface
-           | iface == "org.bluez.GattService1" = return service
+           | iface == T.pack gattServiceIFace = do
+              liftIO $ putStrLn "service properties requested!"
+              return service
            | otherwise = methodError invalidArgs
 
 instance HasInterface (WithObjectPath Characteristic) Properties where
@@ -125,12 +121,6 @@ instance HasInterface Advertisement Properties where
 
 -- * GattService
 
-type GattService = "org.bluez.GattService1"
-gattServiceIFaceP :: Proxy GattService
-gattServiceIFaceP = Proxy
-
-gattServiceIFace :: String
-gattServiceIFace = symbolVal gattServiceIFaceP
 
 instance HasInterface (WithObjectPath Service) GattService where
   getInterface service _ =
@@ -163,12 +153,6 @@ instance HasInterface (WithObjectPath Service) GattService where
 
 -- * GattCharacteristic
 
-type GattCharacteristic = "org.bluez.GattCharacteristic1"
-gattCharacteristicIFaceP :: Proxy GattCharacteristic
-gattCharacteristicIFaceP = Proxy
-
-gattCharacteristicIFace :: String
-gattCharacteristicIFace = symbolVal gattServiceIFaceP
 
 instance HasInterface (WithObjectPath Characteristic) GattCharacteristic where
   getInterface char _ =
@@ -231,12 +215,6 @@ instance HasInterface (WithObjectPath Characteristic) GattCharacteristic where
         , propertyEmitsChangedSignal = PECSFalse
         }
 
-type LEAdvertisement = "org.bluez.LEAdvertisement1"
-leAdvertisementIFaceP :: Proxy LEAdvertisement
-leAdvertisementIFaceP = Proxy
-
-leAdvertisementIFace :: String
-leAdvertisementIFace = symbolVal leAdvertisementIFaceP
 
 instance HasInterface (WithObjectPath Advertisement) LEAdvertisement where
   getInterface adv _ =
@@ -294,7 +272,7 @@ instance HasInterface (WithObjectPath Advertisement) LEAdvertisement where
         , propertyEmitsChangedSignal = PECSFalse
         }
 
-      serviceData' :: Property (RepType (Map.Map UUID T.Text))
+      serviceData' :: Property (RepType (Map.Map UUID BS.ByteString))
       serviceData' = Property
         { propertyPath = objectPath $ (adv ^. path . toText) </> "ServiceData"
         , propertyInterface = T.pack leAdvertisementIFace
@@ -313,23 +291,3 @@ instance HasInterface (WithObjectPath Advertisement) LEAdvertisement where
         , propertySet = Nothing
         , propertyEmitsChangedSignal = PECSFalse
         }
-
-
-
-
--- * Utils
-
-
-invalidArgs :: MsgError
-invalidArgs = MsgError
-  { errorName = "org.freedesktop.DBus.Error.InvalidArgs"
-  , errorText = Nothing
-  , errorBody = []
-  }
-
-notSupported :: MsgError
-notSupported = MsgError
-  { errorName = "org.bluez.Error.NotSupported"
-  , errorText = Nothing
-  , errorBody = []
-  }

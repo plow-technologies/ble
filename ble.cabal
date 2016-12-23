@@ -43,6 +43,7 @@ library
       Bluetooth
       Bluetooth.DBus
       Bluetooth.HasInterface
+      Bluetooth.Interfaces
       Bluetooth.Serialize
       Bluetooth.Types
       Bluetooth.Utils

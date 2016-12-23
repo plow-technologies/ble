@@ -5,6 +5,7 @@ import Bluetooth
 import DBus
 import Lens.Micro
 import Test.Hspec
+import qualified Data.Map as Map
 
 import Control.Concurrent
 
@@ -26,6 +27,7 @@ advertiseSpec = describe "advertise" $ beforeAll connect $ do
   it "adverstises a set of services" $ \conn -> do
     Right () <- runBluetoothM (registerApplication testApp) conn
     v <- runBluetoothM (advertise testAdv) conn
+    threadDelay maxBound
     v `shouldBe` Right ()
 
 
@@ -45,9 +47,13 @@ testCharacteristic :: Characteristic
 testCharacteristic
   = "cdcb58aa-7e4c-4d22-b0bf-a90cd67ba60b"
       & readValue .~ Just (encoded (return True :: MethodHandlerT IO Bool))
+      & properties .~ [CPRead]
 
 testAdv :: WithObjectPath Advertisement
-testAdv = advertisementFor testApp
+testAdv
+  = advertisementFor testApp
+     {-& value . serviceData .~ Map.fromList [( testCharacteristic ^. uuid-}
+                                    {-, "b")]-}
 
 -- * Orphans
 
