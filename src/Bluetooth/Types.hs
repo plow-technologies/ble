@@ -36,6 +36,8 @@ import qualified System.Random   as Rand
 import Bluetooth.Interfaces
 import Bluetooth.Utils
 
+import Debug.Trace
+
 -- | Append two Texts, keeping exactly one slash between them.
 (</>) :: T.Text -> T.Text -> T.Text
 a </> b
@@ -178,13 +180,15 @@ instance IsString Characteristic where
 instance Representable (WithObjectPath Characteristic) where
   type RepType (WithObjectPath Characteristic)
     = 'TypeDict 'TypeString 'TypeVariant
-  toRep char = toRep tmap
+  toRep char = traceShowId $ toRep tmap
     where
       tmap :: Map.Map T.Text Any
       tmap = Map.fromList [ ("UUID", MkAny $ char ^. value . uuid)
                           , ("Service", MkAny $ char ^. path)
                           , ("Flags", MkAny $ char ^. value . properties)
                           ]
+  fromRep _ = error "not implemented"
+
 characteristicObjectPath :: ObjectPath -> Int -> ObjectPath
 characteristicObjectPath appOPath idx = appOPath & toText %~ addSuffix
   where
@@ -211,7 +215,7 @@ instance IsString Service where
 -- Note [WithObjectPath]
 instance Representable (WithObjectPath Service) where
   type RepType (WithObjectPath Service) = 'TypeDict 'TypeString 'TypeVariant
-  toRep serv = toRep tmap
+  toRep serv = traceShowId $ toRep tmap
     where
       tmap :: Map.Map T.Text Any
       tmap = Map.fromList
@@ -223,8 +227,9 @@ instance Representable (WithObjectPath Service) where
 
       charPaths :: Int -> [ObjectPath]
       charPaths i
-        = characteristicObjectPath (objectPath $ serv ^. path . toText) <$> [0..]
+        = characteristicObjectPath (objectPath $ serv ^. path . toText) <$> [0..i]
 
+  fromRep _ = error "not implemented"
 
 
 -- * Application

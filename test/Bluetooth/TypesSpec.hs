@@ -12,7 +12,8 @@ import Test.QuickCheck.Instances ()
 spec :: Spec
 spec = do
   uuidSpec
-  
+  parentPathSpec
+
 uuidSpec :: Spec
 uuidSpec = describe "UUID" $ do
 
@@ -28,6 +29,13 @@ uuidSpec = describe "UUID" $ do
   context "Representable" $ do
     fromRepToRepInverse (Proxy :: Proxy UUID)
 
+parentPathSpec :: Spec
+parentPathSpec = describe "parentPath" $ do
+
+  it "returns the path of the parent" $ do
+    parentPath "/com/turingjump/service01/char10"
+      `shouldBe` "/com/turingjump/service01"
+
 -- * Utils
 
 fromRepToRepInverse
@@ -36,7 +44,7 @@ fromRepToRepInverse
 fromRepToRepInverse _
   = it "has fromRep as a left inverse of toRep" $ property $ \val -> do
       fromRep (toRep (val :: a)) `shouldBe` Just val
-      
+
 -- * Instances
 
 instance Arbitrary UUID where

@@ -33,7 +33,6 @@ withInterface o p = object (T.pack i) $ getInterface o p
   where
     i = symbolVal p
 
-
 -- * ObjectManager
 
 

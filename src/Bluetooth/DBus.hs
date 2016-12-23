@@ -1,6 +1,7 @@
 module Bluetooth.DBus where
 
 import Control.Monad.Reader
+import Data.Monoid ((<>))
 import DBus
 import Lens.Micro
 
@@ -31,20 +32,25 @@ addAllObjs conn app = do
   liftIO $ addObject conn (app ^. path) (app `withInterface` objectManagerIFaceP)
   liftIO $ forM_ (zip [0..] (app ^. services)) $ \(i,s) -> do
     let p = serviceObjectPath (app ^. path) i
-    addObject conn p (WOP p s `withInterface` gattServiceIFaceP)
-    addObject conn p (WOP p s `withInterface` propertiesIFaceP)
+    liftIO $ print p
+    addObject conn p
+      $  (WOP p s `withInterface` gattServiceIFaceP)
+      <> (WOP p s `withInterface` propertiesIFaceP)
     forM_ (zip [0..] (s ^. characteristics)) $ \(i', c) -> do
       let p' = characteristicObjectPath p i'
-      addObject conn p' (WOP p' c `withInterface` gattCharacteristicIFaceP)
-      addObject conn p' (WOP p' c `withInterface` propertiesIFaceP)
+      liftIO $ print p'
+      addObject conn p'
+        $ (WOP p' c `withInterface` gattCharacteristicIFaceP)
+       <> (WOP p' c `withInterface` propertiesIFaceP)
 
 -- | Advertise a set of services.
 advertise :: WithObjectPath Advertisement -> BluetoothM ()
 advertise adv = do
   conn <- ask
   liftIO $ do
-    addObject conn (adv ^. path) (adv `withInterface` leAdvertisementIFaceP)
-    addObject conn (adv ^. path) ((adv ^. value) `withInterface` propertiesIFaceP)
+    addObject conn (adv ^. path)
+      $  (adv `withInterface` leAdvertisementIFaceP)
+      <> ((adv ^. value) `withInterface` propertiesIFaceP)
   toBluetoothM . const $ do
     callMethod bluezName bluezPath (T.pack leAdvertisingManagerIFace) "RegisterAdvertisement" args []
       $ dbusConn conn
