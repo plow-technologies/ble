@@ -1,8 +1,8 @@
 module Bluetooth.Interfaces where
 
+import Data.Proxy
 import DBus
 import GHC.TypeLits
-import Data.Proxy
 
 
 type ObjectManager = "org.freedesktop.DBus.ObjectManager"

@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE StandaloneDeriving         #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE UndecidableInstances       #-}
-{-# LANGUAGE StandaloneDeriving       #-}
 module Bluetooth.Types where
 
 
@@ -17,7 +17,7 @@ import Data.Word              (Word16, Word32)
 import DBus                   (ConnectionType (System), DBusConnection,
                                DBusSimpleType (..),
                                DBusType (DBusSimpleType, TypeDict, TypeVariant),
-                               DBusValue (DBVDict, DBVVariant), MethodError,
+                               DBusValue (DBVVariant), MethodError,
                                MethodHandlerT, Object, ObjectPath,
                                Representable (..), connectBus, objectPath,
                                objectRoot)
@@ -35,8 +35,6 @@ import qualified System.Random   as Rand
 
 import Bluetooth.Interfaces
 import Bluetooth.Utils
-
-import Debug.Trace
 
 -- | Append two Texts, keeping exactly one slash between them.
 (</>) :: T.Text -> T.Text -> T.Text
@@ -111,6 +109,7 @@ data WithObjectPath a = WOP
 
 makeFields ''WithObjectPath
 
+type AnyDBusDict = 'TypeDict 'TypeString 'TypeVariant
 
 -- * Descriptor
 
@@ -168,23 +167,17 @@ data Characteristic = Characteristic
 
 makeFields ''Characteristic
 
-characteristicAsDict :: ObjectPath -> Characteristic
-  -> DBusValue ('TypeDict 'TypeString ('TypeDict 'TypeString 'TypeVariant))
-characteristicAsDict opath char
-  = toRep $ Map.fromList [(T.pack gattCharacteristicIFace, WOP opath char)]
-
 instance IsString Characteristic where
   fromString x = Characteristic (fromString x) [] Nothing Nothing
 
 -- Note [WithObjectPath]
 instance Representable (WithObjectPath Characteristic) where
-  type RepType (WithObjectPath Characteristic)
-    = 'TypeDict 'TypeString 'TypeVariant
-  toRep char = traceShowId $ toRep tmap
+  type RepType (WithObjectPath Characteristic) = AnyDBusDict
+  toRep char = toRep tmap
     where
       tmap :: Map.Map T.Text Any
       tmap = Map.fromList [ ("UUID", MkAny $ char ^. value . uuid)
-                          , ("Service", MkAny $ char ^. path)
+                          , ("Service", MkAny $ (char ^. path) & toText %~ parentPath)
                           , ("Flags", MkAny $ char ^. value . properties)
                           ]
   fromRep _ = error "not implemented"
@@ -214,8 +207,8 @@ instance IsString Service where
 
 -- Note [WithObjectPath]
 instance Representable (WithObjectPath Service) where
-  type RepType (WithObjectPath Service) = 'TypeDict 'TypeString 'TypeVariant
-  toRep serv = traceShowId $ toRep tmap
+  type RepType (WithObjectPath Service) = AnyDBusDict
+  toRep serv = toRep tmap
     where
       tmap :: Map.Map T.Text Any
       tmap = Map.fromList
@@ -227,7 +220,7 @@ instance Representable (WithObjectPath Service) where
 
       charPaths :: Int -> [ObjectPath]
       charPaths i
-        = characteristicObjectPath (objectPath $ serv ^. path . toText) <$> [0..i]
+        = characteristicObjectPath (objectPath $ serv ^. path . toText) <$> [0..i-1]
 
   fromRep _ = error "not implemented"
 
@@ -247,14 +240,20 @@ instance IsString Application where
 instance Representable Application where
   type RepType Application
     = 'TypeDict 'TypeObjectPath
-                ('TypeDict 'TypeString ('TypeDict 'TypeString 'TypeVariant))
-  toRep app = DBVDict $ zipWith servPaths ([0..]::[Int]) $ app ^. services
+                ('TypeDict 'TypeString AnyDBusDict)
+  toRep app = toRep $ Map.fromList $ concat $ do
+    (idxS, serv) <- zip [0..] (app ^. services)
+    let servPath = serviceObjectPath (app ^. path) idxS
+        chars = do
+          (idxC, char) <- zip [0..] (serv ^. characteristics)
+          let charPath = characteristicObjectPath servPath idxC
+          return $ charAsEntry charPath char
+    return $ serviceAsEntry servPath serv : chars
     where
-      servPaths i s = (toRep path', serviceAsDict s)
-        where
-          path' = serviceObjectPath (app ^. path) i
-          serviceAsDict serv
-            = toRep $ Map.fromList [(T.pack gattServiceIFace, WOP path' serv)]
+     serviceAsEntry path' serv
+       = (path', toRep $ Map.fromList [(T.pack gattServiceIFace, WOP path' serv)])
+     charAsEntry path' char
+       = (path', toRep $ Map.fromList [(T.pack gattCharacteristicIFace, WOP path' char)])
   fromRep _ = error "not implemented"
 
 

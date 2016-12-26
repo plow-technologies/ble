@@ -1,16 +1,15 @@
 module Bluetooth.HasInterface where
 
 
-import Control.Monad.IO.Class
 import Data.Proxy
 import DBus
-import DBus.Types   (methodError, object)
+import DBus.Types             (methodError, object)
 import GHC.TypeLits
 import Lens.Micro
 
-import qualified Data.Map  as Map
-import qualified Data.Text as T
 import qualified Data.ByteString as BS
+import qualified Data.Map        as Map
+import qualified Data.Text       as T
 
 import Bluetooth.Interfaces
 import Bluetooth.Types
@@ -73,9 +72,7 @@ instance HasInterface (WithObjectPath Service) Properties where
        where
          go :: T.Text -> MethodHandlerT IO (WithObjectPath Service)
          go iface
-           | iface == T.pack gattServiceIFace = do
-              liftIO $ putStrLn "service properties requested!"
-              return service
+           | iface == T.pack gattServiceIFace = return service
            | otherwise = methodError invalidArgs
 
 instance HasInterface (WithObjectPath Characteristic) Properties where

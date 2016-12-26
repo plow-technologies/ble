@@ -1,7 +1,7 @@
 module Bluetooth.DBus where
 
 import Control.Monad.Reader
-import Data.Monoid ((<>))
+import Data.Monoid          ((<>))
 import DBus
 import Lens.Micro
 
@@ -32,13 +32,11 @@ addAllObjs conn app = do
   liftIO $ addObject conn (app ^. path) (app `withInterface` objectManagerIFaceP)
   liftIO $ forM_ (zip [0..] (app ^. services)) $ \(i,s) -> do
     let p = serviceObjectPath (app ^. path) i
-    liftIO $ print p
     addObject conn p
       $  (WOP p s `withInterface` gattServiceIFaceP)
       <> (WOP p s `withInterface` propertiesIFaceP)
     forM_ (zip [0..] (s ^. characteristics)) $ \(i', c) -> do
       let p' = characteristicObjectPath p i'
-      liftIO $ print p'
       addObject conn p'
         $ (WOP p' c `withInterface` gattCharacteristicIFaceP)
        <> (WOP p' c `withInterface` propertiesIFaceP)
