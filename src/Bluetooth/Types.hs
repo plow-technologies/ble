@@ -17,8 +17,7 @@ import Data.Word              (Word16, Word32)
 import DBus                   (ConnectionType (System), DBusConnection,
                                DBusSimpleType (..),
                                DBusType (DBusSimpleType, TypeDict, TypeVariant),
-                               DBusValue (..), MethodError,
-                               MethodHandlerT, Object, ObjectPath,
+                               DBusValue (..), MethodError, Object, ObjectPath,
                                Representable (..), connectBus, objectPath,
                                objectRoot)
 import DBus.Types             (root)
@@ -33,6 +32,7 @@ import qualified Data.Text       as T
 import qualified Data.UUID       as UUID
 import qualified System.Random   as Rand
 
+import Bluetooth.Errors
 import Bluetooth.Interfaces
 import Bluetooth.Utils
 
@@ -171,22 +171,33 @@ instance Representable CharacteristicOptions where
     return $ case Map.lookup ("offset" :: T.Text) m of
       Just (DBVVariant (DBVUInt16 w)) -> CharacteristicOptions (Just w)
       _            -> CharacteristicOptions Nothing
+  toRep x = case x ^. offset of
+    Nothing -> DBVDict []
+    Just v  -> DBVDict [(toRep ("offset" :: T.Text), toRep $ MkAny v)]
 
-data Characteristic = Characteristic
+type CharacteristicBS = Characteristic BS.ByteString BS.ByteString BS.ByteString
+
+data Characteristic writeArg writeResp read = Characteristic
   { characteristicUuid       :: UUID
   , characteristicProperties :: [CharacteristicProperty]
-  , characteristicReadValue  :: Maybe (MethodHandlerT IO BS.ByteString)
-  , characteristicWriteValue :: Maybe (BS.ByteString -> MethodHandlerT IO BS.ByteString)
-  } deriving (Generic)
+  , characteristicReadValue  :: Maybe (ReadValue read)
+  , characteristicWriteValue :: Maybe (writeArg -> WriteValue writeResp)
+  -- | If @Nothing@, this characteristic does not send notifications.
+  -- If @Just False@, the characteristic does not currently send notifications, but
+  -- can be made to (with a @StartNotify@ method request).
+  -- If @Just True@, the characteristic currently sends notifications (and can
+  -- be made to stop with a @StopNotify@ method request).
+  , characteristicNotifying  :: Maybe Bool
+  } deriving (Functor, Generic)
 
 makeFields ''Characteristic
 
-instance IsString Characteristic where
-  fromString x = Characteristic (fromString x) [] Nothing Nothing
+instance IsString (Characteristic a b c) where
+  fromString x = Characteristic (fromString x) [] Nothing Nothing (Just False)
 
 -- Note [WithObjectPath]
-instance Representable (WithObjectPath Characteristic) where
-  type RepType (WithObjectPath Characteristic) = AnyDBusDict
+instance Representable (WithObjectPath (Characteristic a b c)) where
+  type RepType (WithObjectPath (Characteristic a b c)) = AnyDBusDict
   toRep char = toRep tmap
     where
       tmap :: Map.Map T.Text Any
@@ -211,7 +222,7 @@ characteristicObjectPath appOPath idx = appOPath & toText %~ addSuffix
 
 data Service = Service
   { serviceUuid            :: UUID
-  , serviceCharacteristics :: [Characteristic]
+  , serviceCharacteristics :: [CharacteristicBS]
   } deriving (Generic)
 
 makeFields ''Service

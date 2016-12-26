@@ -1,9 +1,12 @@
 module Bluetooth.HasInterface where
 
 
+import Control.Monad.Except        (liftIO, mapExceptT)
+import Control.Monad.Writer.Strict (WriterT)
 import Data.Proxy
 import DBus
-import DBus.Types             (methodError, object)
+import DBus.Types                  (Parity (..), SomeSignal, methodError,
+                                    object)
 import GHC.TypeLits
 import Lens.Micro
 
@@ -11,6 +14,7 @@ import qualified Data.ByteString as BS
 import qualified Data.Map        as Map
 import qualified Data.Text       as T
 
+import Bluetooth.Errors
 import Bluetooth.Interfaces
 import Bluetooth.Types
 import Bluetooth.Utils
@@ -54,6 +58,11 @@ instance HasInterface Application ObjectManager where
 
 -- * Properties
 
+type ChangedProperties = 'TypeStruct
+  [ 'DBusSimpleType 'TypeString               -- interface_name
+  , AnyDBusDict                               -- changed_properties
+  , 'TypeArray ('DBusSimpleType 'TypeString)  -- invalidated_properties
+  ]
 
 instance HasInterface (WithObjectPath Service) Properties where
   getInterface service _ =
@@ -75,22 +84,29 @@ instance HasInterface (WithObjectPath Service) Properties where
            | iface == T.pack gattServiceIFace = return service
            | otherwise = methodError invalidArgs
 
-instance HasInterface (WithObjectPath Characteristic) Properties where
+instance HasInterface (WithObjectPath CharacteristicBS) Properties where
   getInterface char _ =
     Interface
       { interfaceMethods = [getAll]
-      , interfaceSignals = []
+      , interfaceSignals = [SSD propertiesChanged]
       , interfaceAnnotations = []
       , interfaceProperties = []
       }
     where
+     propertiesChanged :: SignalDescription '[ChangedProperties]
+     propertiesChanged = SignalDescription
+       { signalDPath = char ^. path
+       , signalDInterface = T.pack propertiesIFace
+       , signalDMember = "PropertiesChanged"
+       , signalDArguments = "changes" :> Done
+       }
      getAll
        = Method (repMethod go)
                 "GetAll"
                 ("interface" :> Done)
                 ("rep" :> Done)
        where
-         go :: T.Text -> MethodHandlerT IO (WithObjectPath Characteristic)
+         go :: T.Text -> MethodHandlerT IO (WithObjectPath CharacteristicBS)
          go iface
            | iface == T.pack gattCharacteristicIFace = return char
            | otherwise = methodError invalidArgs
@@ -156,7 +172,15 @@ acceptingOptions handler opts = case opts ^. offset of
   Nothing -> handler
   Just v -> BS.drop (fromInteger $ toInteger v) <$> handler
 
-instance HasInterface (WithObjectPath Characteristic) GattCharacteristic where
+handlerToMethodHandler :: Handler errs a -> MethodHandlerT IO a
+handlerToMethodHandler (Handler h) = MHT $ mapExceptT go h
+  where
+    go :: IO (Either T.Text a) -> WriterT [SomeSignal] IO (Either MsgError a)
+    go x = liftIO $ x >>= \x' -> case x' of
+      Left e -> return . Left $ MsgError e Nothing []
+      Right v -> return $ Right v
+
+instance HasInterface (WithObjectPath CharacteristicBS) GattCharacteristic where
   getInterface char _ =
     Interface
       { interfaceMethods = [readVal, writeVal, startNotify, stopNotify]
@@ -172,11 +196,13 @@ instance HasInterface (WithObjectPath Characteristic) GattCharacteristic where
       notSup = methodError notSupported
 
       readVal = case char ^. value . readValue of
-        Just v -> Method (repMethod $ acceptingOptions v) "ReadValue" ("options" :> Done) ("rep" :> Done)
+        Just v -> Method (repMethod $ acceptingOptions $ handlerToMethodHandler v)
+                         "ReadValue" ("options" :> Done) ("rep" :> Done)
         Nothing -> Method (repMethod notSup) "ReadValue" Done Done
 
       writeVal = case char ^. value . writeValue of
-        Just v -> Method (repMethod v) "WriteValue" ("arg" :> Done) ("rep" :> Done)
+        Just v -> Method (repMethod $ handlerToMethodHandler <$> v)
+                          "WriteValue" ("arg" :> Done) ("rep" :> Done)
         Nothing -> Method (repMethod notSup) "WriteValue" Done Done
 
       stopNotify = Method (repMethod notSup) "StopNotify" Done Done

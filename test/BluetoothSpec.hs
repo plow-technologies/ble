@@ -28,7 +28,7 @@ advertiseSpec = describe "advertise" $ beforeAll connect $ do
   it "adverstises a set of services" $ \conn -> do
     Right () <- runBluetoothM (registerApplication testApp) conn
     v <- runBluetoothM (advertise testAdv) conn
-    threadDelay maxBound
+    {-threadDelay maxBound-}
     v `shouldBe` Right ()
 
 
@@ -44,13 +44,13 @@ testService
   = "351930f8-7d31-43c1-92f5-fd2f0eac272f"
       & characteristics .~ [testCharacteristic]
 
-testCharacteristic :: Characteristic
+testCharacteristic :: CharacteristicBS
 testCharacteristic
   = "cdcb58aa-7e4c-4d22-b0bf-a90cd67ba60b"
       & readValue .~ Just (encoded go)
       & properties .~ [CPRead]
   where
-    go :: MethodHandlerT IO BS.ByteString
+    go :: ReadValue BS.ByteString
     go = do
       liftIO $ putStrLn "Reading characteristic!"
       return "s"

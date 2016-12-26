@@ -42,6 +42,7 @@ library
   exposed-modules:
       Bluetooth
       Bluetooth.DBus
+      Bluetooth.Errors
       Bluetooth.HasInterface
       Bluetooth.Interfaces
       Bluetooth.Serialize

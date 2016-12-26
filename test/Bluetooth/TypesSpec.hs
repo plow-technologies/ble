@@ -61,12 +61,14 @@ instance Arbitrary ObjectPath where
 instance Arbitrary Service where
   arbitrary = Service <$> arbitrary <*> arbitrary
 
-instance Arbitrary Characteristic where
+instance (CoArbitrary a, Arbitrary b, Arbitrary c)
+  => Arbitrary (Characteristic a b c) where
   arbitrary = Characteristic
     <$> arbitrary
     <*> arbitrary
     <*> (fmap return <$> arbitrary)
     <*> (fmap (fmap return) <$> arbitrary)
+    <*> arbitrary
 
 instance Arbitrary CharacteristicProperty where
   arbitrary = elements [minBound..maxBound]
