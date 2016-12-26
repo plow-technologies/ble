@@ -17,7 +17,7 @@ import Data.Word              (Word16, Word32)
 import DBus                   (ConnectionType (System), DBusConnection,
                                DBusSimpleType (..),
                                DBusType (DBusSimpleType, TypeDict, TypeVariant),
-                               DBusValue (DBVVariant), MethodError,
+                               DBusValue (..), MethodError,
                                MethodHandlerT, Object, ObjectPath,
                                Representable (..), connectBus, objectPath,
                                objectRoot)
@@ -157,6 +157,20 @@ chrPropPairs =
   , (CPIndicate, "indicate")
   , (CPSignedWriteCommand, "authenticated-signed-writes")
   ]
+
+data CharacteristicOptions = CharacteristicOptions
+  { characteristicOptionsOffset :: Maybe Word16
+  } deriving (Eq, Show, Read, Generic)
+
+makeFields ''CharacteristicOptions
+
+instance Representable CharacteristicOptions where
+  type RepType CharacteristicOptions = AnyDBusDict
+  fromRep x = do
+    m <- fromRep x
+    return $ case Map.lookup ("offset" :: T.Text) m of
+      Just (DBVVariant (DBVUInt16 w)) -> CharacteristicOptions (Just w)
+      _            -> CharacteristicOptions Nothing
 
 data Characteristic = Characteristic
   { characteristicUuid       :: UUID

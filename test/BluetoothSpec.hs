@@ -5,8 +5,9 @@ import Bluetooth
 import DBus
 import Lens.Micro
 import Test.Hspec
-import qualified Data.Map as Map
+import Control.Monad.IO.Class
 
+import qualified Data.ByteString as BS
 import Control.Concurrent
 
 spec :: Spec
@@ -46,8 +47,13 @@ testService
 testCharacteristic :: Characteristic
 testCharacteristic
   = "cdcb58aa-7e4c-4d22-b0bf-a90cd67ba60b"
-      & readValue .~ Just (encoded (return True :: MethodHandlerT IO Bool))
+      & readValue .~ Just (encoded go)
       & properties .~ [CPRead]
+  where
+    go :: MethodHandlerT IO BS.ByteString
+    go = do
+      liftIO $ putStrLn "Reading characteristic!"
+      return "s"
 
 testAdv :: WithObjectPath Advertisement
 testAdv

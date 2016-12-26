@@ -149,6 +149,12 @@ instance HasInterface (WithObjectPath Service) GattService where
 
 -- * GattCharacteristic
 
+acceptingOptions :: MethodHandlerT IO BS.ByteString
+ -> CharacteristicOptions
+ -> MethodHandlerT IO BS.ByteString
+acceptingOptions handler opts = case opts ^. offset of
+  Nothing -> handler
+  Just v -> BS.drop (fromInteger $ toInteger v) <$> handler
 
 instance HasInterface (WithObjectPath Characteristic) GattCharacteristic where
   getInterface char _ =
@@ -166,12 +172,12 @@ instance HasInterface (WithObjectPath Characteristic) GattCharacteristic where
       notSup = methodError notSupported
 
       readVal = case char ^. value . readValue of
-        Just v -> Method (repMethod v) "ReadValue" Done ("rep" :> Done)
+        Just v -> Method (repMethod $ acceptingOptions v) "ReadValue" ("options" :> Done) ("rep" :> Done)
         Nothing -> Method (repMethod notSup) "ReadValue" Done Done
 
       writeVal = case char ^. value . writeValue of
-        Just v -> Method (repMethod v) "ReadValue" ("arg" :> Done) ("rep" :> Done)
-        Nothing -> Method (repMethod notSup) "ReadValue" Done Done
+        Just v -> Method (repMethod v) "WriteValue" ("arg" :> Done) ("rep" :> Done)
+        Nothing -> Method (repMethod notSup) "WriteValue" Done Done
 
       stopNotify = Method (repMethod notSup) "StopNotify" Done Done
 
