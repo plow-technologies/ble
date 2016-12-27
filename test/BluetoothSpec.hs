@@ -24,28 +24,33 @@ registerApplicationSpec = describe "registerApplication" $ before connect $ do
   it "registers the service with bluez" $ \conn -> do
     v <- runBluetoothM (registerApplication testApp) conn
     v `shouldBe` Right ()
+    -- We verify that the application is in fact registered by checking that
+    -- attempting to register it again throws an AlreadyExists error.
+    Left err <- runBluetoothM (registerApplication testApp) conn
+    show err `shouldContain` "Already Exists"
 
 advertiseSpec :: Spec
 advertiseSpec = describe "advertise" $ before connect $ do
 
-  it "adverstises a set of services" $ \conn -> do
-    Right () <- runBluetoothM (registerApplication testApp) conn
-    v <- runBluetoothM (advertise testAdv) conn
-    v `shouldBe` Right ()
+  let checkAdvert ad conn = do
+        v <- runBluetoothM (advertise ad) conn
+        v `shouldBe` Right ()
+        -- We verify that the advertisement was registered by checking that
+        -- attempting to register it again throws an AlreadyExists error.
+        Left err <- runBluetoothM (advertise ad) conn
+        show err `shouldContain` "Already Exists"
+
+  it "adverstises a set of services" $ \conn -> checkAdvert testAdv conn
 
   {-it "works with service data" $ \conn -> do-}
-    {-Right () <- runBluetoothM (registerApplication testApp) conn-}
     {-let adv = testAdv-}
          {-& value . serviceData . at "351930f8"-}
          {-?~ "hi"-}
-    {-v <- runBluetoothM (advertise adv) conn-}
-    {-v `shouldBe` Right ()-}
+    {-checkAdvert adv conn-}
 
   it "works with manufacturer data" $ \conn -> do
-    Right () <- runBluetoothM (registerApplication testApp) conn
     let adv = testAdv & value . manufacturerData . at 1 ?~ "hi"
-    v <- runBluetoothM (advertise adv) conn
-    v `shouldBe` Right ()
+    checkAdvert adv conn
 
 
 -- * Test service
@@ -74,8 +79,6 @@ testCharacteristic
 testAdv :: WithObjectPath Advertisement
 testAdv
   = advertisementFor testApp
-     {-& value . serviceData .~ Map.fromList [( testCharacteristic ^. uuid-}
-                                    {-, "b")]-}
 
 -- * Orphans
 
