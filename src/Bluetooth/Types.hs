@@ -308,7 +308,7 @@ data Advertisement = Advertisement
   , advertisementServiceUUIDs     :: [UUID]
   , advertisementSolicitUUIDs     :: [UUID]
   , advertisementManufacturerData :: Map.Map Word16 BS.ByteString
-  , advertisementServiceData      :: Map.Map T.Text BS.ByteString
+  , advertisementServiceData      :: Map.Map UUID BS.ByteString
   , advertisementIncludeTxPower   :: Bool
   } deriving (Generic)
 

@@ -31,18 +31,18 @@ advertiseSpec = describe "advertise" $ before connect $ do
     v <- runBluetoothM (advertise testAdv) conn
     v `shouldBe` Right ()
 
-  it "works with service data" $ \conn -> do
-    Right () <- runBluetoothM (registerApplication testApp) conn
-    let adv = testAdv & value . serviceData . at "a" ?~ "hi"
-    v <- runBluetoothM (advertise adv) conn
-    {-threadDelay maxBound-}
-    v `shouldBe` Right ()
+  {-it "works with service data" $ \conn -> do-}
+    {-Right () <- runBluetoothM (registerApplication testApp) conn-}
+    {-let adv = testAdv-}
+         {-& value . serviceData . at "351930f8"-}
+         {-?~ "hi"-}
+    {-v <- runBluetoothM (advertise adv) conn-}
+    {-v `shouldBe` Right ()-}
 
   it "works with manufacturer data" $ \conn -> do
     Right () <- runBluetoothM (registerApplication testApp) conn
     let adv = testAdv & value . manufacturerData . at 1 ?~ "hi"
     v <- runBluetoothM (advertise adv) conn
-    {-threadDelay maxBound-}
     v `shouldBe` Right ()
 
 

@@ -300,7 +300,7 @@ instance HasInterface (WithObjectPath Advertisement) LEAdvertisement where
         , propertyEmitsChangedSignal = PECSFalse
         }
 
-      serviceData' :: Property (RepType (Map.Map T.Text BS.ByteString))
+      serviceData' :: Property (RepType (Map.Map UUID BS.ByteString))
       serviceData' = Property
         { propertyPath = objectPath $ (adv ^. path . toText) </> "ServiceData"
         , propertyInterface = T.pack leAdvertisementIFace
