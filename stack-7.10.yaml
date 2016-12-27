@@ -1,0 +1,8 @@
+flags: {}
+extra-package-dbs: []
+packages:
+- '.'
+extra-deps:
+- d-bus-0.1.5
+- xml-picklers-0.3.6
+resolver: lts-6.27

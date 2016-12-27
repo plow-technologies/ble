@@ -1,13 +1,13 @@
-sudo: required
+sudo: false
 
-services:
-  - docker
+env:
+  - STACK_YAML=stack.yaml
+  - STACK_YAML=stack-7.10.yaml
 
-before_install:
-  # We need Ubuntu >= 15, which travis doesn't have, so we use docker
-  - docker pull jkarni/ble
-  - docker run test
-  
+addons:
+  apt:
+    packages: libgmp-dev
+
 install:
   # stack
   - mkdir -p ~/.local/bin
@@ -16,7 +16,9 @@ install:
   - stack --version
 
 script:
-  - ./travis.sh
+  - stack setup --no-terminal
+  - stack build --ghc-options=-Werror --no-terminal
+  - stack test --ghc-options=-Werror --no-terminal
 
 cache:
   directories:

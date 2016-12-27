@@ -1,4 +1,8 @@
+{-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+#ifndef Bluez
+{-# OPTIONS_GHC -fno-warn-unused-bindings #-}
+#endif
 module BluetoothSpec (spec) where
 
 import Bluetooth
@@ -6,10 +10,8 @@ import Control.Monad.IO.Class
 import DBus
 import Test.Hspec
 
-import qualified Data.Text as T
 import qualified Data.ByteString as BS
 
-import Control.Concurrent
 
 spec :: Spec
 spec = do

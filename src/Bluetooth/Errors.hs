@@ -1,7 +1,10 @@
+{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE PolyKinds                  #-}
 {-# LANGUAGE UndecidableInstances       #-}
+#if MIN_VERSION_base(4,9,0)
 {-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
+#endif
 module Bluetooth.Errors where
 
 import           Control.Monad.Except
