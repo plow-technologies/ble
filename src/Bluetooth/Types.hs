@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE StandaloneDeriving         #-}
 {-# LANGUAGE TemplateHaskell            #-}
@@ -306,8 +307,8 @@ data Advertisement = Advertisement
   { advertisementType_            :: AdvertisementType
   , advertisementServiceUUIDs     :: [UUID]
   , advertisementSolicitUUIDs     :: [UUID]
-  , advertisementManufacturerData :: Map.Map T.Text T.Text
-  , advertisementServiceData      :: Map.Map UUID BS.ByteString
+  , advertisementManufacturerData :: Map.Map Word16 BS.ByteString
+  , advertisementServiceData      :: Map.Map T.Text BS.ByteString
   , advertisementIncludeTxPower   :: Bool
   } deriving (Generic)
 
@@ -322,8 +323,13 @@ instance Representable Advertisement where
         [ ("Type", MkAny $ adv ^. type_)
         , ("ServiceUUIDs", MkAny $ adv ^. serviceUUIDs)
         , ("SolicitUUIDs", MkAny $ adv ^. solicitUUIDs)
+#ifdef BluezGEQ543
+        , ("ManufacturerData", MkAny $ MkAny <$> adv ^. manufacturerData)
+        , ("ServiceData", MkAny $ MkAny <$> adv ^. serviceData)
+#else
         , ("ManufacturerData", MkAny $ adv ^. manufacturerData)
         , ("ServiceData", MkAny $ adv ^. serviceData)
+#endif
         , ("IncludeTxPower", MkAny $ adv ^. includeTxPower)
         ]
 

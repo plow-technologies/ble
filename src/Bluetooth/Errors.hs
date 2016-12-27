@@ -32,7 +32,7 @@ newtype Handler (errs :: [(* -> *) -> Constraint]) a
   deriving (Functor, Applicative, Monad, MonadIO)
 
 type family IsElem (x :: k) (list :: [k]) :: Constraint where
-  IsElem x '[x] = ()
+  IsElem x (x ': xs) = ()
   IsElem x (y ': xs) = IsElem x xs
 
 class ThrowsFailed m where errFailed :: m a

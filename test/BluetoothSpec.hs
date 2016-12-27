@@ -2,12 +2,13 @@
 module BluetoothSpec (spec) where
 
 import Bluetooth
-import DBus
-import Lens.Micro
-import Test.Hspec
 import Control.Monad.IO.Class
+import DBus
+import Test.Hspec
 
+import qualified Data.Text as T
 import qualified Data.ByteString as BS
+
 import Control.Concurrent
 
 spec :: Spec
@@ -16,18 +17,31 @@ spec = do
   advertiseSpec
 
 registerApplicationSpec :: Spec
-registerApplicationSpec = describe "registerApplication" $ beforeAll connect $ do
+registerApplicationSpec = describe "registerApplication" $ before connect $ do
 
   it "registers the service with bluez" $ \conn -> do
     v <- runBluetoothM (registerApplication testApp) conn
     v `shouldBe` Right ()
 
 advertiseSpec :: Spec
-advertiseSpec = describe "advertise" $ beforeAll connect $ do
+advertiseSpec = describe "advertise" $ before connect $ do
 
   it "adverstises a set of services" $ \conn -> do
     Right () <- runBluetoothM (registerApplication testApp) conn
     v <- runBluetoothM (advertise testAdv) conn
+    v `shouldBe` Right ()
+
+  it "works with service data" $ \conn -> do
+    Right () <- runBluetoothM (registerApplication testApp) conn
+    let adv = testAdv & value . serviceData . at "a" ?~ "hi"
+    v <- runBluetoothM (advertise adv) conn
+    {-threadDelay maxBound-}
+    v `shouldBe` Right ()
+
+  it "works with manufacturer data" $ \conn -> do
+    Right () <- runBluetoothM (registerApplication testApp) conn
+    let adv = testAdv & value . manufacturerData . at 1 ?~ "hi"
+    v <- runBluetoothM (advertise adv) conn
     {-threadDelay maxBound-}
     v `shouldBe` Right ()
 
@@ -47,7 +61,7 @@ testService
 testCharacteristic :: CharacteristicBS
 testCharacteristic
   = "cdcb58aa-7e4c-4d22-b0bf-a90cd67ba60b"
-      & readValue .~ Just (encoded go)
+      & readValue ?~ encodeRead go
       & properties .~ [CPRead]
   where
     go :: ReadValue BS.ByteString

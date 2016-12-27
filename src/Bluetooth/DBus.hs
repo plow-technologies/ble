@@ -13,6 +13,14 @@ import Bluetooth.Interfaces
 import Bluetooth.Types
 import Bluetooth.Utils
 
+-- | Registers an application and advertises it. If you would like to have
+-- finer-grained control of the advertisement, use @registerApplication@ and
+-- @advertise@.
+registerAndAdvertiseApplication :: Application -> BluetoothM ()
+registerAndAdvertiseApplication app = do
+  registerApplication app
+  advertise (advertisementFor app)
+
 -- | Registers an application (set of services) with Bluez.
 registerApplication :: Application -> BluetoothM ()
 registerApplication app = do

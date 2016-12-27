@@ -6,20 +6,11 @@ import qualified Data.Serialize  as S
 
 import Bluetooth.Errors
 
--- This is no good, since we need annotations for the *monad* of the original
--- type.
-class Encoded original encoded | original -> encoded where
-  encoded :: original -> encoded
+encodeRead :: S.Serialize a => ReadValue a -> ReadValue BS.ByteString
+encodeRead h = S.encode <$> h
 
-instance S.Serialize a => Encoded (Handler err a)
-                                  (Handler err BS.ByteString) where
-  encoded o = S.encode <$> o
-
-instance (S.Serialize a, S.Serialize b, ThrowsFailed `IsElem` err)
-  => Encoded (a -> Handler err b)
-             (BS.ByteString -> Handler err BS.ByteString) where
-  encoded f = \b -> case S.decode b of
-    Left err -> errFailed
-    Right v -> S.encode <$> f v
-
---- instance Encoded (a -> IO b) (BS.ByteString -> IO BS.ByteString) where
+encodeWrite :: (S.Serialize a, S.Serialize b)
+  => (a -> WriteValue b) -> (BS.ByteString -> WriteValue BS.ByteString)
+encodeWrite h v = case S.decode v of
+  Left _   -> errFailed
+  Right v' -> S.encode <$> h v'

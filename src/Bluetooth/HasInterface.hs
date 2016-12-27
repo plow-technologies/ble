@@ -4,9 +4,9 @@ module Bluetooth.HasInterface where
 import Control.Monad.Except        (liftIO, mapExceptT)
 import Control.Monad.Writer.Strict (WriterT)
 import Data.Proxy
+import Data.Word                   (Word16)
 import DBus
-import DBus.Types                  (Parity (..), SomeSignal, methodError,
-                                    object)
+import DBus.Types                  (SomeSignal, methodError, object)
 import GHC.TypeLits
 import Lens.Micro
 
@@ -290,7 +290,7 @@ instance HasInterface (WithObjectPath Advertisement) LEAdvertisement where
         , propertyEmitsChangedSignal = PECSFalse
         }
 
-      manufacturerData' :: Property (RepType (Map.Map T.Text T.Text))
+      manufacturerData' :: Property (RepType (Map.Map Word16 BS.ByteString))
       manufacturerData' = Property
         { propertyPath = objectPath $ (adv ^. path . toText) </> "ManufacturerData"
         , propertyInterface = T.pack leAdvertisementIFace
@@ -300,7 +300,7 @@ instance HasInterface (WithObjectPath Advertisement) LEAdvertisement where
         , propertyEmitsChangedSignal = PECSFalse
         }
 
-      serviceData' :: Property (RepType (Map.Map UUID BS.ByteString))
+      serviceData' :: Property (RepType (Map.Map T.Text BS.ByteString))
       serviceData' = Property
         { propertyPath = objectPath $ (adv ^. path . toText) </> "ServiceData"
         , propertyInterface = T.pack leAdvertisementIFace
