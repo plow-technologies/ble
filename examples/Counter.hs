@@ -44,4 +44,3 @@ getCounter ref
       putStrLn $ "Value changed to: " ++ show i
       putStrLn $ "Old value: " ++ show v
       return v
-

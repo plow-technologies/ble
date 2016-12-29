@@ -1,4 +1,4 @@
-module Bluetooth.Descriptors where
+module Bluetooth.Internal.Descriptors where
 
 -- This modules defines some commonly used GATT descriptors.
 

@@ -1,4 +1,4 @@
-module Bluetooth.DBus where
+module Bluetooth.Internal.DBus where
 
 import Control.Monad.Reader
 import Data.Monoid          ((<>))
@@ -8,10 +8,10 @@ import Lens.Micro
 import qualified Data.Map  as Map
 import qualified Data.Text as T
 
-import Bluetooth.HasInterface
-import Bluetooth.Interfaces
-import Bluetooth.Types
-import Bluetooth.Utils
+import Bluetooth.Internal.HasInterface
+import Bluetooth.Internal.Interfaces
+import Bluetooth.Internal.Types
+import Bluetooth.Internal.Utils
 
 -- | Registers an application and advertises it. If you would like to have
 -- finer-grained control of the advertisement, use @registerApplication@ and

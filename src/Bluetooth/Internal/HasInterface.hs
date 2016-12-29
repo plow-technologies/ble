@@ -1,4 +1,4 @@
-module Bluetooth.HasInterface where
+module Bluetooth.Internal.HasInterface where
 
 
 import Control.Monad.Except        (liftIO, mapExceptT)
@@ -14,10 +14,10 @@ import qualified Data.ByteString as BS
 import qualified Data.Map        as Map
 import qualified Data.Text       as T
 
-import Bluetooth.Errors
-import Bluetooth.Interfaces
-import Bluetooth.Types
-import Bluetooth.Utils
+import Bluetooth.Internal.Errors
+import Bluetooth.Internal.Interfaces
+import Bluetooth.Internal.Types
+import Bluetooth.Internal.Utils
 
 -- The Bluez DBus API makes certain requirements about the interfaces
 -- that objects must meet. These requirements are outlined in:

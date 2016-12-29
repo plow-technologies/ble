@@ -5,7 +5,7 @@
 #if MIN_VERSION_base(4,9,0)
 {-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
 #endif
-module Bluetooth.Errors where
+module Bluetooth.Internal.Errors where
 
 import           Control.Monad.Except
 import qualified Data.Text            as T

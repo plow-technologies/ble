@@ -1,13 +1,15 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Bluetooth.TypesSpec (spec) where
 
-import Bluetooth.Types
-import qualified Data.Text as T
-import Data.Proxy (Proxy(Proxy))
+import Data.Proxy                (Proxy (Proxy))
 import DBus
 import Test.Hspec
 import Test.QuickCheck
 import Test.QuickCheck.Instances ()
+
+import qualified Data.Text as T
+
+import Bluetooth.Internal.Types
 
 spec :: Spec
 spec = do

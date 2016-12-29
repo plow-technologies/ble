@@ -55,14 +55,14 @@ library
     cpp-options: -DBluez
   exposed-modules:
       Bluetooth
-      Bluetooth.DBus
-      Bluetooth.Descriptors
-      Bluetooth.Errors
-      Bluetooth.HasInterface
-      Bluetooth.Interfaces
-      Bluetooth.Serialize
-      Bluetooth.Types
-      Bluetooth.Utils
+      Bluetooth.Internal.DBus
+      Bluetooth.Internal.Descriptors
+      Bluetooth.Internal.Errors
+      Bluetooth.Internal.HasInterface
+      Bluetooth.Internal.Interfaces
+      Bluetooth.Internal.Serialize
+      Bluetooth.Internal.Types
+      Bluetooth.Internal.Utils
   default-language: Haskell2010
 
 executable counter

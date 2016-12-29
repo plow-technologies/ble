@@ -1,4 +1,4 @@
-module Bluetooth.Interfaces where
+module Bluetooth.Internal.Interfaces where
 
 import Data.Proxy
 import DBus

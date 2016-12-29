@@ -1,4 +1,4 @@
-module Bluetooth.Utils where
+module Bluetooth.Internal.Utils where
 
 import qualified Data.Text as T
 import Lens.Micro

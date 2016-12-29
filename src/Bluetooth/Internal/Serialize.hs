@@ -1,10 +1,10 @@
 {-# LANGUAGE UndecidableInstances #-}
-module Bluetooth.Serialize where
+module Bluetooth.Internal.Serialize where
 
 import qualified Data.ByteString as BS
 import qualified Data.Serialize  as S
 
-import Bluetooth.Errors
+import Bluetooth.Internal.Errors
 
 encodeRead :: S.Serialize a => ReadValueM a -> ReadValueM BS.ByteString
 encodeRead h = S.encode <$> h

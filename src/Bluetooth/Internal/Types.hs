@@ -3,7 +3,7 @@
 {-# LANGUAGE StandaloneDeriving         #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE UndecidableInstances       #-}
-module Bluetooth.Types where
+module Bluetooth.Internal.Types where
 
 
 import Control.Monad.Except   (ExceptT (ExceptT), MonadError, runExceptT)
@@ -32,9 +32,9 @@ import qualified Data.Text       as T
 import qualified Data.UUID       as UUID
 import qualified System.Random   as Rand
 
-import Bluetooth.Errors
-import Bluetooth.Interfaces
-import Bluetooth.Utils
+import Bluetooth.Internal.Errors
+import Bluetooth.Internal.Interfaces
+import Bluetooth.Internal.Utils
 
 -- | Append two Texts, keeping exactly one slash between them.
 (</>) :: T.Text -> T.Text -> T.Text
