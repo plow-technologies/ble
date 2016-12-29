@@ -21,7 +21,11 @@ uuidSpec = describe "UUID" $ do
 
     it "works for full UUIDs" $ do
       show ("636e8de5-c57b-4069-8c59-bb72e1ad805e" :: UUID)
-        `shouldBe` "UnofficialUUID 636e8de5-c57b-4069-8c59-bb72e1ad805e"
+        `shouldBe` "UUID 636e8de5-c57b-4069-8c59-bb72e1ad805e"
+
+    it "works for 32-bit UUIDs" $ do
+      show ("636e8de5" :: UUID)
+        `shouldBe` "UUID 636e8de5-0000-1000-8000-00805f9b34fb"
 
     it "throws an error for invalid UUIDs" $ do
       print ("boo" :: UUID) `shouldThrow` anyException

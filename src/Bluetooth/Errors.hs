@@ -14,14 +14,14 @@ import           GHC.Exts             (Constraint)
 -- All of this would be less verbose with overloaded labels, but then we
 -- couldn't supported GHC < 8.
 
-type ReadValue a = Handler '[ ThrowsFailed
+type ReadValueM a = Handler '[ ThrowsFailed
                             , ThrowsInProgress
                             , ThrowsNotPermitted
                             , ThrowsNotAuthorized
                             , ThrowsNotSupported
                             ] a
 
-type WriteValue a = Handler '[ ThrowsFailed
+type WriteValueM a = Handler '[ ThrowsFailed
                              , ThrowsInProgress
                              , ThrowsNotPermitted
                              , ThrowsInvalidValueLength

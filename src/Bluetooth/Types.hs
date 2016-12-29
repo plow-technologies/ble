@@ -14,7 +14,7 @@ import Data.IORef
 import Data.Maybe             (fromMaybe)
 import Data.Monoid            ((<>))
 import Data.String            (IsString (fromString))
-import Data.Word              (Word16, Word32)
+import Data.Word              (Word16)
 import DBus                   (ConnectionType (System), DBusConnection,
                                DBusSimpleType (..),
                                DBusType (DBusSimpleType, TypeDict, TypeVariant),
@@ -25,7 +25,6 @@ import DBus.Types             (root)
 import GHC.Generics           (Generic)
 import Lens.Micro
 import Lens.Micro.TH          (makeFields)
-import Numeric                (readHex)
 
 import qualified Data.ByteString as BS
 import qualified Data.Map        as Map
@@ -55,41 +54,38 @@ parentPath p = case reverse $ T.splitOn "/" p of
 -- See <http://www.itu.int/rec/T-REC-X.667/en ITU-T Rec. X.677> for more
 -- information on the format and generation of these UUIDs.
 data UUID
-  = OfficialUUID16 Word16
-  | OfficialUUID32 Word32
-  -- Custom services use 128-bit identifiers
-  | UnofficialUUID UUID.UUID
+  = UUID UUID.UUID
   deriving (Eq, Show, Ord, Generic)
+
+baseUUID :: String
+baseUUID = "-0000-1000-8000-00805F9B34FB"
 
 instance IsString UUID where
   fromString x
-    | length x > 8  = UnofficialUUID
+    | length x > 8  = UUID
        $ fromMaybe (error "UUID.fromString: invalid UUID") $ UUID.fromString x
-    | length x == 8 = OfficialUUID32 $ go x
-    | length x == 4 = OfficialUUID16 $ go x
+    | length x == 8 = UUID
+       $ fromMaybe (error "UUID.fromString: invalid UUID") $ UUID.fromString
+       $ x <> baseUUID
+    | length x == 4 = UUID
+       $ fromMaybe (error "UUID.fromString: invalid UUID") $ UUID.fromString
+       $ "0000" <> x <> baseUUID
     | otherwise     = error "UUID.fromString: expecting 16, 32 or 128-bit UUID"
-    where
-    go y = case [ z | (z, "") <- readHex y ] of
-      [val] -> val
-      []    -> error "UUID.fromString: no parse"
-      _     -> error "UUID.fromString: ambiguous parse"
+
 
 instance Representable UUID where
   type RepType UUID = 'DBusSimpleType 'TypeString
-  toRep (UnofficialUUID w) = toRep $ UUID.toText w
+  toRep (UUID w) = toRep $ UUID.toText w
   fromRep x = do
     s <- fromRep x
     case T.length s of
-      36 -> UnofficialUUID <$> UUID.fromText s
+      36 -> UUID <$> UUID.fromText s
       _  -> Nothing
 
--- Random instance only generates unofficial UUIDs, since probably
--- that's the most common use-case. But this feels a little wrong.
 instance Rand.Random UUID where
-  randomR (UnofficialUUID lo, UnofficialUUID hi) g =
-    let (a', g') = Rand.randomR (lo,hi) g in (UnofficialUUID a', g')
-  randomR _ g = Rand.random g
-  random g = let (a', g') = Rand.random g in (UnofficialUUID a', g')
+  randomR (UUID lo, UUID hi) g =
+    let (a', g') = Rand.randomR (lo,hi) g in (UUID a', g')
+  random g = let (a', g') = Rand.random g in (UUID a', g')
 
 -- * Any
 
@@ -112,13 +108,23 @@ makeFields ''WithObjectPath
 
 type AnyDBusDict = 'TypeDict 'TypeString 'TypeVariant
 
+-- * Method
+
+{-data Method where-}
+  {-ReadValue :: ReadValueM BS.ByteString-}
+  {-WriteValue :: BS.ByteString -> WriteValueM BS.ByteString-}
+  {-Notify :: -}
+
 -- * Descriptor
 
-data Descriptor
-  = ExtendedProperties
-  | CharacteristicUserDescription
-  | ClientCharacteristicConfiguration
-  deriving (Eq, Show, Read, Generic, Ord)
+data Descriptor = Descriptor
+  { descriptorUuid :: UUID
+  } deriving (Eq, Show, Generic)
+
+{-ExtendedProperties-}
+  {-| CharacteristicUserDescription-}
+  {-| ClientCharacteristicConfiguration-}
+  {-deriving (Eq, Show, Read, Generic, Ord)-}
 
 data AdvertisingPacketType
   = ConnectableUndirected
@@ -181,8 +187,8 @@ type CharacteristicBS = Characteristic BS.ByteString BS.ByteString BS.ByteString
 data Characteristic writeArg writeResp read = Characteristic
   { characteristicUuid       :: UUID
   , characteristicProperties :: [CharacteristicProperty]
-  , characteristicReadValue  :: Maybe (ReadValue read)
-  , characteristicWriteValue :: Maybe (writeArg -> WriteValue writeResp)
+  , characteristicReadValue  :: Maybe (ReadValueM read)
+  , characteristicWriteValue :: Maybe (writeArg -> WriteValueM writeResp)
   -- | If @Nothing@, this characteristic does not send notifications.
   -- If @Just False@, the characteristic does not currently send notifications, but
   -- can be made to (with a @StartNotify@ method request).
@@ -302,6 +308,7 @@ instance Representable AdvertisementType where
   toRep x = case x of
     Broadcast -> toRep ("broadcast" :: T.Text)
     Peripheral -> toRep ("peripheral" :: T.Text)
+  fromRep _ = error "not implemented"
 
 data Advertisement = Advertisement
   { advertisementType_            :: AdvertisementType
@@ -332,6 +339,7 @@ instance Representable Advertisement where
 #endif
         , ("IncludeTxPower", MkAny $ adv ^. includeTxPower)
         ]
+  fromRep _ = error "not implemented"
 
 instance Default Advertisement where
   def = Advertisement Peripheral [] [] mempty mempty False
