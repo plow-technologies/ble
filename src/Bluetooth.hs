@@ -22,6 +22,13 @@
 -- pragma and lenses. A complete example can be found
 -- <https://github.com/plow-technologies/ble/blob/master/examples/Counter.hs here>.
 --
+-- > import Bluetooth
+-- >
+-- > app :: Application
+-- > app = "/com/turingjump/example" & services .~ [aService]
+-- >
+-- > aService :: Service
+-- > aService
 module Bluetooth
   (
     registerApplication
@@ -33,9 +40,11 @@ module Bluetooth
 
 
   -- * Handler
+  -- | @Handler err@ is a monad that allows the errors in the type-level list
+  -- @err@.
+  , Handler
   , ReadValueM
   , WriteValueM
-  , Handler
 
   -- ** Handler error classes
   , ThrowsFailed(..)
@@ -56,6 +65,7 @@ module Bluetooth
   , Characteristic(..)
   , CharacteristicBS
   , Advertisement(..)
+  , WithObjectPath(..)
 
   -- * Field lenses
   , uuid
@@ -67,6 +77,7 @@ module Bluetooth
   , services
   , path
   , type_
+  , value
   , solicitUUIDs
   , serviceUUIDs
   , manufacturerData
