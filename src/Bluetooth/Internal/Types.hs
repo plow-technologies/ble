@@ -51,8 +51,18 @@ parentPath p = case reverse $ T.splitOn "/" p of
 
 -- * UUID
 
+-- | UUIDs, used for services and characteristics.
+--
+-- Unofficial UUIDs will have 128-bits, and will look this:
+--
+--    d45e83fb-c772-459e-91a8-43cbf1443af4
+--
+-- Official UUIDs will have either 32 or 16 bits.
+--
 -- See <http://www.itu.int/rec/T-REC-X.667/en ITU-T Rec. X.677> for more
--- information on the format and generation of these UUIDs.
+-- information on the format and generation of these UUIDs. You can use
+-- the <https://www.uuidgenerator.net/ Online UUID Generator> to generate
+-- UUIDs.
 data UUID
   = UUID UUID.UUID
   deriving (Eq, Show, Ord, Generic)
@@ -121,10 +131,6 @@ data Descriptor = Descriptor
   { descriptorUuid :: UUID
   } deriving (Eq, Show, Generic)
 
-{-ExtendedProperties-}
-  {-| CharacteristicUserDescription-}
-  {-| ClientCharacteristicConfiguration-}
-  {-deriving (Eq, Show, Read, Generic, Ord)-}
 
 data AdvertisingPacketType
   = ConnectableUndirected
@@ -355,6 +361,8 @@ data Connection = Connection
   , addObject :: ObjectPath -> Object -> IO ()
   }
 
+-- | Creates a connection to DBus. This does *not* represent Bluetooth
+-- connection.
 connect :: IO Connection
 connect = do
   let noHandler _ _ _ = return ()
