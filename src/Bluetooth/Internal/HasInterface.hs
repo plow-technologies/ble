@@ -6,7 +6,8 @@ import Control.Monad.Writer.Strict (WriterT)
 import Data.Proxy
 import Data.Word                   (Word16)
 import DBus
-import DBus.Types                  (SomeSignal, methodError, object)
+import DBus.Types                  (ArgParity, Parity (Arg, Null), SomeSignal,
+                                    methodError, object)
 import GHC.TypeLits
 import Lens.Micro
 
@@ -57,6 +58,10 @@ instance HasInterface Application ObjectManager where
                ("rep" :> Done)
 
 -- * Properties
+-- | The @org.freedesktop.DBus.Properties@ interface.
+--
+-- See the <https://dbus.freedesktop.org/doc/dbus-specification.html#standard-interfaces-properties
+-- relevant section of the DBus spec> for more information.
 
 type ChangedProperties = 'TypeStruct
   [ 'DBusSimpleType 'TypeString               -- interface_name
@@ -64,11 +69,21 @@ type ChangedProperties = 'TypeStruct
   , 'TypeArray ('DBusSimpleType 'TypeString)  -- invalidated_properties
   ]
 
-instance HasInterface (WithObjectPath Service) Properties where
-  getInterface service _ =
+-- A helper function for constructing D-Bus Property interfaces. Pass a
+-- non-Nothing if the object supports the PropertiesChanged signal.
+--
+-- The 'Get' and 'Set' methods don't seem to be used by the Bluez DBus API, but
+-- are supplied for compliance with the D-Bus Property Interface.
+defPropIFace :: forall a.
+  ( Representable a
+  {-, ArgParity (FlattenRepType (RepType a)) ~ Arg Null-}
+  , RepType a ~ AnyDBusDict
+  )
+  => Maybe ObjectPath -> T.Text -> a -> Interface
+defPropIFace opath supportedIFaceName val =
     Interface
       { interfaceMethods = [getAll]
-      , interfaceSignals = []
+      , interfaceSignals = signals
       , interfaceAnnotations = []
       , interfaceProperties = []
       }
@@ -79,57 +94,49 @@ instance HasInterface (WithObjectPath Service) Properties where
                 ("interface" :> Done)
                 ("rep" :> Done)
        where
-         go :: T.Text -> MethodHandlerT IO (WithObjectPath Service)
+         go :: T.Text -> MethodHandlerT IO a
          go iface
-           | iface == T.pack gattServiceIFace = return service
+           | iface == supportedIFaceName = return val
            | otherwise = methodError invalidArgs
+     {-get-}
+       {-= Method (repMethod go)-}
+                {-"Get"-}
+                {-("interface" :> "propertyName" :> Done)-}
+                {-("rep" :> Done)-}
+       {-where-}
+         {-go :: T.Text -> T.Text -> MethodHandlerT IO (D-}
+         {-go iface propName-}
+           {-| iface == supportedIFaceName = case Map.lookup propName dbusPropMap of-}
+             {-Nothing -> methodError invalidArgs-}
+             {-Just p  -> return p-}
+           {-| otherwise = methodError invalidArgs-}
+
+     {-dbusPropMap :: Map.Map T.Text (DBusValue TypeVariant)-}
+     {-Just dbusPropMap = fromRep (toRep val)-}
+
+     signals = case opath of
+       Nothing -> []
+       Just p  -> [SSD propertiesChanged]
+         where
+         propertiesChanged :: SignalDescription '[ChangedProperties]
+         propertiesChanged = SignalDescription
+           { signalDPath = p
+           , signalDInterface = T.pack propertiesIFace
+           , signalDMember = "PropertiesChanged"
+           , signalDArguments = "changes" :> Done
+           }
+
+instance HasInterface (WithObjectPath Service) Properties where
+  getInterface service _
+    = defPropIFace (Just $ service ^. path) (T.pack gattServiceIFace) service
 
 instance HasInterface (WithObjectPath CharacteristicBS) Properties where
-  getInterface char _ =
-    Interface
-      { interfaceMethods = [getAll]
-      , interfaceSignals = [SSD propertiesChanged]
-      , interfaceAnnotations = []
-      , interfaceProperties = []
-      }
-    where
-     propertiesChanged :: SignalDescription '[ChangedProperties]
-     propertiesChanged = SignalDescription
-       { signalDPath = char ^. path
-       , signalDInterface = T.pack propertiesIFace
-       , signalDMember = "PropertiesChanged"
-       , signalDArguments = "changes" :> Done
-       }
-     getAll
-       = Method (repMethod go)
-                "GetAll"
-                ("interface" :> Done)
-                ("rep" :> Done)
-       where
-         go :: T.Text -> MethodHandlerT IO (WithObjectPath CharacteristicBS)
-         go iface
-           | iface == T.pack gattCharacteristicIFace = return char
-           | otherwise = methodError invalidArgs
+  getInterface char _
+    = defPropIFace (Just $ char ^. path) (T.pack gattCharacteristicIFace) char
 
 instance HasInterface Advertisement Properties where
-  getInterface adv _ =
-    Interface
-      { interfaceMethods = [getAll]
-      , interfaceSignals = []
-      , interfaceAnnotations = []
-      , interfaceProperties = []
-      }
-    where
-     getAll
-       = Method (repMethod go)
-                "GetAll"
-                ("interface" :> Done)
-                ("rep" :> Done)
-       where
-         go :: T.Text -> MethodHandlerT IO Advertisement
-         go iface
-           | iface == T.pack leAdvertisementIFace = return adv
-           | otherwise = methodError invalidArgs
+  getInterface adv _
+    = defPropIFace Nothing (T.pack leAdvertisementIFace) adv
 
 -- * GattService
 
