@@ -76,13 +76,15 @@ type ChangedProperties = 'TypeStruct
 -- are supplied for compliance with the D-Bus Property Interface.
 defPropIFace :: forall a.
   ( Representable a
-  {-, ArgParity (FlattenRepType (RepType a)) ~ Arg Null-}
   , RepType a ~ AnyDBusDict
   )
   => Maybe ObjectPath -> T.Text -> a -> Interface
 defPropIFace opath supportedIFaceName val =
     Interface
       { interfaceMethods = [getAll]
+      -- The 'd-bus' library's implementation of @DBus.Property.property@ does
+      -- not create an independent signal for PropertyChanged, which makes me
+      -- wonder whether this is the right thing to do.
       , interfaceSignals = signals
       , interfaceAnnotations = []
       , interfaceProperties = []
@@ -131,8 +133,17 @@ instance HasInterface (WithObjectPath Service) Properties where
     = defPropIFace (Just $ service ^. path) (T.pack gattServiceIFace) service
 
 instance HasInterface (WithObjectPath CharacteristicBS) Properties where
-  getInterface char _
-    = defPropIFace (Just $ char ^. path) (T.pack gattCharacteristicIFace) char
+  getInterface char _ = case char ^. value . notifying of
+    Nothing -> baseIface
+    Just _  -> baseIface { interfaceProperties = SomeProperty prop : interfaceProperties baseIface }
+   where
+     baseIface = defPropIFace (Just $ char ^. path) (T.pack gattCharacteristicIFace) char
+     prop = mkProperty (char ^. path)
+                       (T.pack gattCharacteristicIFace)
+                       "Value"
+                       (handlerToMethodHandler <$> char ^. value . readValue)
+                       (fmap handlerToMethodHandler <$> char ^. value . writeValue)
+                       PECSTrue
 
 instance HasInterface Advertisement Properties where
   getInterface adv _

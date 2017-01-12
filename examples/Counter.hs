@@ -38,9 +38,9 @@ getCounter ref
       putStrLn $ "Value requested. New value: " ++ show v
       return v
 
-    writeV :: Int -> WriteValueM Int
+    writeV :: Int -> WriteValueM Bool
     writeV i = liftIO $ do
       v <- atomically $ swapTVar ref i
       putStrLn $ "Value changed to: " ++ show i
       putStrLn $ "Old value: " ++ show v
-      return v
+      return True

@@ -188,29 +188,33 @@ instance Representable CharacteristicOptions where
     Nothing -> DBVDict []
     Just v  -> DBVDict [(toRep ("offset" :: T.Text), toRep $ MkAny v)]
 
-type CharacteristicBS = Characteristic BS.ByteString BS.ByteString BS.ByteString
+type CharacteristicBS = Characteristic BS.ByteString
 
-data Characteristic writeArg writeResp read = Characteristic
+data Characteristic typ = Characteristic
   { characteristicUuid       :: UUID
   , characteristicProperties :: [CharacteristicProperty]
-  , characteristicReadValue  :: Maybe (ReadValueM read)
-  , characteristicWriteValue :: Maybe (writeArg -> WriteValueM writeResp)
+  , characteristicReadValue  :: Maybe (ReadValueM typ)
+  -- | Write a value. Note that the value is only writeable externally if the
+  -- characteristic contains the CPWrite property *and* this is a Just. If the
+  -- characteristic contains the CPNotify property, then any call to
+  -- 'characteristicWriteValue' will triger a notification.
+  , characteristicWriteValue :: Maybe (typ -> WriteValueM Bool)
   -- | If @Nothing@, this characteristic does not send notifications.
   -- If @Just False@, the characteristic does not currently send notifications, but
   -- can be made to (with a @StartNotify@ method request).
   -- If @Just True@, the characteristic currently sends notifications (and can
   -- be made to stop with a @StopNotify@ method request).
   , characteristicNotifying  :: Maybe Bool
-  } deriving (Functor, Generic)
+  } deriving (Generic)
 
 makeFields ''Characteristic
 
-instance IsString (Characteristic a b c) where
+instance IsString (Characteristic a) where
   fromString x = Characteristic (fromString x) [] Nothing Nothing (Just False)
 
 -- Note [WithObjectPath]
-instance Representable (WithObjectPath (Characteristic a b c)) where
-  type RepType (WithObjectPath (Characteristic a b c)) = AnyDBusDict
+instance Representable (WithObjectPath (Characteristic a)) where
+  type RepType (WithObjectPath (Characteristic a)) = AnyDBusDict
   toRep char = toRep tmap
     where
       tmap :: Map.Map T.Text Any

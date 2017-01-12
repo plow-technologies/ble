@@ -67,8 +67,8 @@ instance Arbitrary ObjectPath where
 instance Arbitrary Service where
   arbitrary = Service <$> arbitrary <*> arbitrary
 
-instance (CoArbitrary a, Arbitrary b, Arbitrary c)
-  => Arbitrary (Characteristic a b c) where
+instance (CoArbitrary a, Arbitrary a)
+  => Arbitrary (Characteristic a) where
   arbitrary = Characteristic
     <$> arbitrary
     <*> arbitrary
