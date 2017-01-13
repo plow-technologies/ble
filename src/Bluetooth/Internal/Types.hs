@@ -204,13 +204,13 @@ data Characteristic typ = Characteristic
   -- can be made to (with a @StartNotify@ method request).
   -- If @Just True@, the characteristic currently sends notifications (and can
   -- be made to stop with a @StopNotify@ method request).
-  , characteristicNotifying  :: Maybe Bool
+  , characteristicNotifying  :: Maybe (IORef Bool)
   } deriving (Generic)
 
 makeFields ''Characteristic
 
 instance IsString (Characteristic a) where
-  fromString x = Characteristic (fromString x) [] Nothing Nothing (Just False)
+  fromString x = Characteristic (fromString x) [] Nothing Nothing Nothing
 
 -- Note [WithObjectPath]
 instance Representable (WithObjectPath (Characteristic a)) where

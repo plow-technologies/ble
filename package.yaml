@@ -100,3 +100,8 @@ executables:
     dependencies:
       - ble
       - stm
+  hrs:
+    main:            HeartRate.hs
+    source-dirs:     examples
+    dependencies:
+      - ble

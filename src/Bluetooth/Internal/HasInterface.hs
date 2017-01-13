@@ -3,11 +3,11 @@ module Bluetooth.Internal.HasInterface where
 
 import Control.Monad.Except        (liftIO, mapExceptT)
 import Control.Monad.Writer.Strict (WriterT)
+import Data.IORef
 import Data.Proxy
 import Data.Word                   (Word16)
 import DBus
-import DBus.Types                  (ArgParity, Parity (Arg, Null), SomeSignal,
-                                    methodError, object)
+import DBus.Types                  (SomeSignal, methodError, object)
 import GHC.TypeLits
 import Lens.Micro
 
@@ -223,12 +223,19 @@ instance HasInterface (WithObjectPath CharacteristicBS) GattCharacteristic where
                           "WriteValue" ("arg" :> Done) ("rep" :> Done)
         Nothing -> Method (repMethod notSup) "WriteValue" Done Done
 
-      stopNotify = Method (repMethod notSup) "StopNotify" Done Done
+      stopNotify = Method (repMethod go) "StopNotify" Done Done
+        where
+          go :: MethodHandlerT IO ()
+          go = case char ^. value . notifying of
+            Nothing -> return ()
+            Just r -> liftIO $ writeIORef r False
 
       startNotify = Method (repMethod go) "StartNotify" Done Done
         where
           go :: MethodHandlerT IO ()
-          go = return ()
+          go = case char ^. value . notifying of
+            Nothing -> return ()
+            Just r -> liftIO $ writeIORef r True
 
       uuid' :: Property (RepType UUID)
       uuid' = Property
