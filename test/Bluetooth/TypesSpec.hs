@@ -1,8 +1,10 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Bluetooth.TypesSpec (spec) where
 
+import Data.IORef
 import Data.Proxy                (Proxy (Proxy))
 import DBus
+import System.IO.Unsafe          (unsafePerformIO)
 import Test.Hspec
 import Test.QuickCheck
 import Test.QuickCheck.Instances ()
@@ -74,7 +76,14 @@ instance (CoArbitrary a, Arbitrary a)
     <*> arbitrary
     <*> (fmap return <$> arbitrary)
     <*> (fmap (fmap return) <$> arbitrary)
-    <*> arbitrary
+    <*> genIORef
+    where
+      genIORef = do
+        m <- arbitrary
+        if m then Just . unsafePerformIO . newIORef <$> arbitrary
+             else return Nothing
+
+
 
 instance Arbitrary CharacteristicProperty where
   arbitrary = elements [minBound..maxBound]
