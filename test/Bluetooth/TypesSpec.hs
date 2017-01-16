@@ -83,7 +83,5 @@ instance (CoArbitrary a, Arbitrary a)
         if m then Just . unsafePerformIO . newIORef <$> arbitrary
              else return Nothing
 
-
-
 instance Arbitrary CharacteristicProperty where
   arbitrary = elements [minBound..maxBound]

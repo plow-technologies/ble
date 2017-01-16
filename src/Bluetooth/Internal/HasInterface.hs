@@ -1,7 +1,6 @@
 module Bluetooth.Internal.HasInterface where
 
 
-import Control.Monad
 import Control.Monad.Except        (liftIO, mapExceptT)
 import Control.Monad.Writer.Strict (WriterT)
 import Data.IORef
@@ -208,7 +207,7 @@ instance HasInterface (WithObjectPath CharacteristicBS) GattCharacteristic where
       , interfaceProperties = [ SomeProperty uuid'
                               , SomeProperty service
                               , SomeProperty flags
-                              , SomeProperty val
+                              , SomeProperty $ valProp char
                               ]
       }
     where
@@ -228,7 +227,8 @@ instance HasInterface (WithObjectPath CharacteristicBS) GattCharacteristic where
           go writeTheVal newVal = do
             res <- handlerToMethodHandler $ writeTheVal newVal
             nots <- liftIO $ sequence $ readIORef <$> char ^. value . notifying
-            when (nots == Just True && res) $ propertyChanged val newVal
+            liftIO $ print (nots, res)
+            {-when (nots == Just True && res) $ propertyChanged val newVal-}
             return res
 
       stopNotify = Method (repMethod go) "StopNotify" Done Done
@@ -276,13 +276,13 @@ instance HasInterface (WithObjectPath CharacteristicBS) GattCharacteristic where
         , propertyEmitsChangedSignal = PECSFalse
         }
 
-      val :: Property (RepType BS.ByteString)
-      val = mkProperty (char ^. path)
-                       (T.pack gattCharacteristicIFace)
-                       "Value"
-                       (handlerToMethodHandler <$> char ^. value . readValue)
-                       (fmap handlerToMethodHandler <$> char ^. value . writeValue)
-                       PECSTrue
+valProp :: WithObjectPath (CharacteristicBS) -> Property (RepType BS.ByteString)
+valProp char = mkProperty (char ^. path)
+                          (T.pack gattCharacteristicIFace)
+                          "Value"
+                          (handlerToMethodHandler <$> char ^. value . readValue)
+                          (fmap handlerToMethodHandler <$> char ^. value . writeValue)
+                          PECSTrue
 
 
 instance HasInterface (WithObjectPath Advertisement) LEAdvertisement where

@@ -84,6 +84,9 @@ module Bluetooth
   , serviceData
   , includeTxPower
 
+  -- * Updating values with notification
+  , writeChrc
+
   -- * Encoding and decogin
   -- | Helpers for 'readValue' and 'writeValue'.
   , encodeRead

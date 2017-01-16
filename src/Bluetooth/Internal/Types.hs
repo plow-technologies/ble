@@ -209,6 +209,7 @@ data Characteristic typ = Characteristic
 
 makeFields ''Characteristic
 
+
 instance IsString (Characteristic a) where
   fromString x = Characteristic (fromString x) [] Nothing Nothing Nothing
 

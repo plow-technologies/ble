@@ -1,12 +1,16 @@
 module Bluetooth.Internal.DBus where
 
+import Control.Monad.Error.Class (throwError)
 import Control.Monad.Reader
-import Data.Monoid          ((<>))
+import Data.IORef                (readIORef)
+import Data.Monoid               ((<>))
 import DBus
+import DBus.Signal               (execSignalT)
 import Lens.Micro
 
-import qualified Data.Map  as Map
-import qualified Data.Text as T
+import qualified Data.Map       as Map
+import qualified Data.Serialize as S
+import qualified Data.Text      as T
 
 import Bluetooth.Internal.HasInterface
 import Bluetooth.Internal.Interfaces
@@ -71,6 +75,27 @@ advertisementFor app = WOP p adv
   where
     adv = def & serviceUUIDs .~ (app ^.. services . traversed . uuid)
     p = app ^. path & toText %~ (</> "adv")
+
+-- | Write a characteristic (if possible). Returns True if characterstic was
+-- successfully written.
+writeChrc :: S.Serialize x => WithObjectPath CharacteristicBS -> x -> BluetoothM Bool
+writeChrc c v = case (c ^. value . writeValue, c ^. value . notifying) of
+  (Nothing, _) -> return False
+  (Just f, Nothing) -> runEff . handlerToMethodHandler $ f (S.encode v)
+  (Just f, Just r)  -> runEff $ do
+     changed <- handlerToMethodHandler (f $ S.encode v)
+     notify <- liftIO $ readIORef r
+     when (changed && notify) $ propertyChanged (valProp c) (S.encode v)
+     return changed
+  where
+    runEff :: MethodHandlerT IO x -> BluetoothM x
+    runEff act = do
+      conn <- asks dbusConn
+      res <- liftIO $ execSignalT act conn
+      case res of
+        Left e -> throwError $ MethodErrorMessage $ errorBody e
+        Right val -> return val
+
 
 -- * Constants
 

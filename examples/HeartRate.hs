@@ -2,12 +2,13 @@
 module Main (main) where
 
 -- This example contains a demonstration of the standard Heart Rate Service
--- (HRS). It serves as an examples of using notifications.
+-- (HRS). It serves as an examples of using notifications. (NOT YET FUNCTIONAL)
 import Bluetooth
 import Control.Concurrent
 import Control.Monad
 import Control.Monad.IO.Class
 import Data.IORef
+import System.Random          (randomRIO)
 
 
 main :: IO ()
@@ -21,7 +22,9 @@ main = do
     Right () -> putStrLn "Started BLE Heart Rate Service application!"
     Left e -> error $ "Error starting application" ++ show e
   forever $ do
-    atomicModifyIORef' heartRateRef (\v -> (succ v, ()))
+    newValue <- randomRIO (50, 150)
+    {-writeChrc (heartRateMeasurement s) newValue-}
+    writeIORef heartRateRef newValue
     putStrLn "Value updated!"
     nots <- readIORef isNotifyingRef
     putStrLn $ if nots then "Notifying" else "Not notifying"
@@ -30,7 +33,7 @@ main = do
 
 data AppState = AppState
   { currentHeartRate :: IORef Int
-  , isNotifying :: IORef Bool
+  , isNotifying      :: IORef Bool
   }
 
 app :: AppState -> Application
