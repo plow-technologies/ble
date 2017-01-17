@@ -3,6 +3,9 @@
 {-# LANGUAGE StandaloneDeriving         #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE UndecidableInstances       #-}
+#if !MIN_VERSION_base(4,9,0)
+{-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
+#endif
 module Bluetooth.Internal.Types where
 
 

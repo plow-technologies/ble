@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 #ifndef Bluez
-{-# OPTIONS_GHC -fno-warn-unused-bindings #-}
+{-# OPTIONS_GHC -fno-warn-unused-binds #-}
 #endif
 module BluetoothSpec (spec) where
 
