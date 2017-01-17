@@ -17,8 +17,8 @@ install:
 
 script:
   - stack setup --no-terminal
-  - stack build --ghc-options=-Werror --no-terminal
-  - stack test --ghc-options=-Werror --no-terminal
+  - stack build --ghc-options=-Werror --no-terminal --flag ble:-hasBluez
+  - stack test --ghc-options=-Werror --no-terminal  --flag ble:-hasBluez
 
 cache:
   directories:

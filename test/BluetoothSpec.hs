@@ -13,10 +13,15 @@ import Test.Hspec
 import qualified Data.ByteString as BS
 
 
+
 spec :: Spec
 spec = do
+#ifndef Bluez
+  return ()
+#else
   registerApplicationSpec
   advertiseSpec
+#endif
 
 registerApplicationSpec :: Spec
 registerApplicationSpec = describe "registerApplication" $ before connect $ do
