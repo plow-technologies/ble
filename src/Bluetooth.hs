@@ -22,13 +22,27 @@
 -- pragma and lenses. A complete example can be found
 -- <https://github.com/plow-technologies/ble/blob/master/examples/Counter.hs here>.
 --
+-- > {-# LANGUAGE OverloadedStrings #-}
 -- > import Bluetooth
+-- > import Control.Concurrent (threadDelay)
 -- >
 -- > app :: Application
 -- > app = "/com/turingjump/example" & services .~ [aService]
 -- >
 -- > aService :: Service
--- > aService
+-- > aService = "d0bc6707-e9a5-4c85-8d22-d73d33f0330c"
+-- >     & characteristics .~ [aCharacteristic]
+-- >
+-- > aCharacteristic :: CharacteristicBS
+-- > aCharacteristic = "b3170df6-1770-4d60-86db-a487534cbcc3"
+-- >     & readValue ?~ encodeRead (return (32::Int))
+-- >     & properties .~ [CPRead]
+-- >
+-- > main :: IO ()
+-- > main = do
+-- >   conn <- connect
+-- >   runBluetoothM (registerAndAdverstiseApplication app) conn
+-- >   threadDelay maxBound
 module Bluetooth
   (
     registerApplication
@@ -37,35 +51,6 @@ module Bluetooth
   , advertisementFor
   , connect
   , runBluetoothM
-
-
-  -- * Handler
-  -- | @Handler err@ is a monad that allows the errors in the type-level list
-  -- @err@.
-  , Handler
-  , ReadValueM
-  , WriteValueM
-
-  -- ** Handler error classes
-  , ThrowsFailed(..)
-  , ThrowsInProgress(..)
-  , ThrowsNotPermitted(..)
-  , ThrowsNotAuthorized(..)
-  , ThrowsNotSupported(..)
-  , ThrowsInvalidValueLength(..)
-
-
-  -- * BLE Types
-  -- | Types representing components of a BLE application.
-  , Connection
-  , Application(..)
-  , Service(..)
-  , UUID(UUID)
-  , CharacteristicProperty(..)
-  , Characteristic(..)
-  , CharacteristicBS
-  , Advertisement(..)
-  , WithObjectPath(..)
 
   -- * Field lenses
   , uuid
@@ -87,7 +72,36 @@ module Bluetooth
   -- * Updating values with notification
   , writeChrc
 
-  -- * Encoding and decogin
+  -- * Handler
+  -- | @Handler err@ is a monad that allows the errors in the type-level list
+  -- @err@.
+  , Handler
+  , ReadValueM
+  , WriteValueM
+
+  -- ** Handler error classes
+  , ThrowsFailed(..)
+  , ThrowsInProgress(..)
+  , ThrowsNotPermitted(..)
+  , ThrowsNotAuthorized(..)
+  , ThrowsNotSupported(..)
+  , ThrowsInvalidValueLength(..)
+
+
+  -- * BLE Types
+  -- | Types representing components of a BLE application.
+  , Connection
+  , Application
+  , Service
+  , UUID(UUID)
+  , CharacteristicProperty(..)
+  , Characteristic
+  , CharacteristicBS
+  , Advertisement
+  , WithObjectPath
+
+
+  -- * Encoding and decoding
   -- | Helpers for 'readValue' and 'writeValue'.
   , encodeRead
   , encodeWrite

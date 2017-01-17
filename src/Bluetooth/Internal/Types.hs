@@ -270,6 +270,9 @@ instance Representable (WithObjectPath Service) where
 
 -- * Application
 
+-- | An application. Can be created from it's @IsString@ instance.
+-- The string (application path) is used only for the DBus API, and will not
+-- have relevance within Bluetooth.
 data Application = Application
   { applicationPath     :: ObjectPath
   , applicationServices :: [Service]

@@ -100,21 +100,6 @@ defPropIFace opath supportedIFaceName val =
          go iface
            | iface == supportedIFaceName = return val
            | otherwise = methodError invalidArgs
-     {-get-}
-       {-= Method (repMethod go)-}
-                {-"Get"-}
-                {-("interface" :> "propertyName" :> Done)-}
-                {-("rep" :> Done)-}
-       {-where-}
-         {-go :: T.Text -> T.Text -> MethodHandlerT IO (D-}
-         {-go iface propName-}
-           {-| iface == supportedIFaceName = case Map.lookup propName dbusPropMap of-}
-             {-Nothing -> methodError invalidArgs-}
-             {-Just p  -> return p-}
-           {-| otherwise = methodError invalidArgs-}
-
-     {-dbusPropMap :: Map.Map T.Text (DBusValue TypeVariant)-}
-     {-Just dbusPropMap = fromRep (toRep val)-}
 
      signals = case opath of
        Nothing -> []
