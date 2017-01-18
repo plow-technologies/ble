@@ -17,6 +17,7 @@ spec :: Spec
 spec = do
   uuidSpec
   parentPathSpec
+  chrPropPairsSpec
 
 uuidSpec :: Spec
 uuidSpec = describe "UUID" $ do
@@ -43,6 +44,12 @@ parentPathSpec = describe "parentPath" $ do
   it "returns the path of the parent" $ do
     parentPath "/com/turingjump/service01/char10"
       `shouldBe` "/com/turingjump/service01"
+
+chrPropPairsSpec :: Spec
+chrPropPairsSpec = describe "chrPropPairs" $ do
+
+  it "contains all constructors of CharacteristicProperty" $ do
+    all (`elem` (fst <$> chrPropPairs)) [minBound..maxBound] `shouldBe` True
 
 -- * Utils
 

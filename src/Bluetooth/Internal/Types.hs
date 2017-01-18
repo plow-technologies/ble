@@ -147,8 +147,13 @@ data AdvertisingPacketType
 data CharacteristicProperty
   = CPBroadcast
   | CPRead
-  | CPWriteWithouResponse
+  | CPEncryptRead
+  | CPEncryptAuthenticatedRead
+  | CPWriteWithoutResponse
   | CPWrite
+  | CPEncryptWrite
+  | CPEncryptAuthenticatedWrite
+  | CPAuthenticatedSignedWrites
   | CPNotify
   | CPIndicate
   | CPSignedWriteCommand
@@ -167,8 +172,13 @@ chrPropPairs :: [(CharacteristicProperty, T.Text)]
 chrPropPairs =
   [ (CPBroadcast, "broadcast")
   , (CPRead, "read")
-  , (CPWriteWithouResponse, "write-without-response")
+  , (CPEncryptRead, "encrypt-read")
+  , (CPEncryptAuthenticatedRead, "encrypt-authenticated-read")
+  , (CPWriteWithoutResponse, "write-without-response")
   , (CPWrite, "write")
+  , (CPEncryptWrite, "encrypt-write")
+  , (CPEncryptAuthenticatedWrite, "encrypt-authenticated-write")
+  , (CPAuthenticatedSignedWrites, "authenticated-signed-writes")
   , (CPNotify, "notify")
   , (CPIndicate, "indicate")
   , (CPSignedWriteCommand, "authenticated-signed-writes")
@@ -198,15 +208,14 @@ data Characteristic typ = Characteristic
   , characteristicProperties :: [CharacteristicProperty]
   , characteristicReadValue  :: Maybe (ReadValueM typ)
   -- | Write a value. Note that the value is only writeable externally if the
-  -- characteristic contains the CPWrite property *and* this is a Just. If the
-  -- characteristic contains the CPNotify property, then any call to
-  -- 'characteristicWriteValue' will triger a notification.
+  -- characteristic contains the CPWrite property *and* this is a Just.
   , characteristicWriteValue :: Maybe (typ -> WriteValueM Bool)
   -- | If @Nothing@, this characteristic does not send notifications.
   -- If @Just False@, the characteristic does not currently send notifications, but
   -- can be made to (with a @StartNotify@ method request).
   -- If @Just True@, the characteristic currently sends notifications (and can
   -- be made to stop with a @StopNotify@ method request).
+  -- **NOTE**: Notifications do not currently work.
   , characteristicNotifying  :: Maybe (IORef Bool)
   } deriving (Generic)
 

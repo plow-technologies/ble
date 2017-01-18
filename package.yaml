@@ -105,3 +105,8 @@ executables:
     source-dirs:     examples
     dependencies:
       - ble
+  auth:
+    main:            Auth.hs
+    source-dirs:     examples
+    dependencies:
+      - ble

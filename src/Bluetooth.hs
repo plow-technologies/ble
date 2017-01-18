@@ -72,20 +72,6 @@ module Bluetooth
   -- * Updating values with notification
   , writeChrc
 
-  -- * Handler
-  -- | @Handler err@ is a monad that allows the errors in the type-level list
-  -- @err@.
-  , Handler
-  , ReadValueM
-  , WriteValueM
-
-  -- ** Handler error classes
-  , ThrowsFailed(..)
-  , ThrowsInProgress(..)
-  , ThrowsNotPermitted(..)
-  , ThrowsNotAuthorized(..)
-  , ThrowsNotSupported(..)
-  , ThrowsInvalidValueLength(..)
 
 
   -- * BLE Types
@@ -105,6 +91,21 @@ module Bluetooth
   -- | Helpers for 'readValue' and 'writeValue'.
   , encodeRead
   , encodeWrite
+
+  -- * Handler
+  -- | @Handler err@ is a monad that allows the errors in the type-level list
+  -- @err@.
+  , Handler
+  , ReadValueM
+  , WriteValueM
+
+  -- ** Handler error classes
+  , ThrowsFailed(..)
+  , ThrowsInProgress(..)
+  , ThrowsNotPermitted(..)
+  , ThrowsNotAuthorized(..)
+  , ThrowsNotSupported(..)
+  , ThrowsInvalidValueLength(..)
 
   -- * Re-exports
   , module Lens.Micro

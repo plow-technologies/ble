@@ -1,5 +1,9 @@
 module Main (main) where
 
+-- A simple example of a complete Bluetooth Low Energy application. The
+-- application allows a counter to be read, and adds one to the value of the
+-- counter, as well as allowing the counter to be set to any value.
+
 import Bluetooth
 import Control.Concurrent     (threadDelay)
 import Control.Concurrent.STM
