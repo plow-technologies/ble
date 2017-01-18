@@ -12,6 +12,7 @@ author:              Julian K. Arni
 maintainer:          jkarni@turingjump.com
 copyright:           2016 Julian K. Arni
 github:              plow-techonolgies/ble
+stability:           alpha
 tested-with:         GHC == 7.10.3, GHC == 8.0.1
 
 ghc-options: -Wall
@@ -25,6 +26,11 @@ flags:
     description: Whether to run tests that require Bluez
     manual: True
     default: True
+
+extra-source-files:
+  - README.md
+  - package.yaml
+  - LICENSE
 
 when:
   - condition: flag(bluez543)
