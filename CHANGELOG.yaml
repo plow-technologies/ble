@@ -1,0 +1,17 @@
+upcoming:
+
+releases:
+
+  - version: "0.1.1.0"
+    changes:
+
+      - description: Lower lower bound on 'cereal' package
+        authors: jkarni
+        date: 2017-01-24
+
+  - version: "0.1.0.0"
+    changes:
+
+      - description: Initial release
+        authors: jkarni
+        date: 2017-01-18
