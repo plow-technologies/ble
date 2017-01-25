@@ -106,6 +106,7 @@ module Bluetooth
   , ThrowsNotAuthorized(..)
   , ThrowsNotSupported(..)
   , ThrowsInvalidValueLength(..)
+  , IsElem
 
   -- * Re-exports
   , module Lens.Micro
