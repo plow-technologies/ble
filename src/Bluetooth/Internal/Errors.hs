@@ -34,6 +34,13 @@ newtype Handler (errs :: [(* -> *) -> Constraint]) a
   -- NOT MonadError!
   deriving (Functor, Applicative, Monad, MonadIO)
 
+-- | Asserts that an error type is an element of a list.
+--
+-- > example :: ThrowsFailed `IsElem` errs => Handler errs ()
+-- > example
+-- >  = errFailed "Every attempt is a wholly new start, and a different kind of failure"
+--
+-- @since 0.1.2.0
 type family IsElem (x :: k) (list :: [k]) :: Constraint where
   IsElem x (x ': xs) = ()
   IsElem x (y ': xs) = IsElem x xs
