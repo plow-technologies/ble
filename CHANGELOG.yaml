@@ -2,6 +2,14 @@ upcoming:
 
 releases:
 
+  - version: "0.1.3.0"
+    changes:
+
+      - description: Add 'connectionName'
+        authors: jkarni
+        issue: 2
+        date: 2017-01-26
+
   - version: "0.1.2.0"
     changes:
 
