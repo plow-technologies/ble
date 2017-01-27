@@ -24,7 +24,7 @@ import DBus                   (ConnectionType (System), DBusConnection,
                                DBusValue (..), MethodError, Object, ObjectPath,
                                Representable (..), connectBus, objectPath,
                                objectRoot)
-import DBus.Types             (root)
+import DBus.Types             (dBusConnectionName, root)
 import GHC.Generics           (Generic)
 import Lens.Micro
 import Lens.Micro.TH          (makeFields)
@@ -380,6 +380,15 @@ data Connection = Connection
   -- Should it be possible to remove objects?
   , addObject :: ObjectPath -> Object -> IO ()
   }
+
+-- | The unique DBus connection name, Useful for monitoring activity with
+-- 'dbus-monitor'. For information on how to setup dbus-monitor for debugging,
+-- see <https://wiki.ubuntu.com/DebuggingDBus DebuggingDBus>.
+--
+-- @since 0.1.3.0
+connectionName :: Connection -> T.Text
+connectionName = dBusConnectionName . dbusConn
+
 
 -- | Creates a connection to DBus. This does *not* represent Bluetooth
 -- connection.

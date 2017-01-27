@@ -68,6 +68,7 @@ module Bluetooth
   , manufacturerData
   , serviceData
   , includeTxPower
+  , connectionName
 
   -- * Updating values with notification
   , writeChrc
