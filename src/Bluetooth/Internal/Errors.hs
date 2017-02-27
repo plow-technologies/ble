@@ -9,62 +9,47 @@ module Bluetooth.Internal.Errors where
 
 import           Control.Monad.Except
 import qualified Data.Text            as T
-import           GHC.Exts             (Constraint)
+import           Data.Tuple           (swap)
+import           GHC.Generics         (Generic)
 
--- All of this would be less verbose with overloaded labels, but then we
--- couldn't supported GHC < 8.
+-- | Errors a handler might throw. In general, you should only throw handlers
+-- that are allowed for the handler type (read/write).
+data Error
+  -- | Can be throw from either read or write handlers.
+  = ErrorFailed
+  -- | Can be throw from either read or write handlers.
+  | ErrorInProgress
+  -- | Can be throw from either read or write handlers.
+  | ErrorNotPermitted
+  -- | Can be throw from either read or write handlers.
+  | ErrorNotAuthorized
+  -- | Can be throw from either read or write handlers.
+  | ErrorNotSupported
+  -- | Indicates that the argument has invalid length. Should not be used from
+  -- a read handler
+  | ErrorInvalidValueLength
+  deriving (Eq, Show, Read, Generic, Ord, Bounded)
 
-type ReadValueM a = Handler '[ ThrowsFailed
-                            , ThrowsInProgress
-                            , ThrowsNotPermitted
-                            , ThrowsNotAuthorized
-                            , ThrowsNotSupported
-                            ] a
 
-type WriteValueM a = Handler '[ ThrowsFailed
-                             , ThrowsInProgress
-                             , ThrowsNotPermitted
-                             , ThrowsInvalidValueLength
-                             , ThrowsNotAuthorized
-                             , ThrowsNotSupported
-                             ] a
-
-newtype Handler (errs :: [(* -> *) -> Constraint]) a
+newtype Handler a
   = Handler { getReadValue :: ExceptT T.Text IO a }
-  -- NOT MonadError!
-  deriving (Functor, Applicative, Monad, MonadIO)
+  deriving (Functor, Applicative, Monad, MonadIO, Generic)
 
--- | Asserts that an error type is an element of a list.
---
--- > example :: ThrowsFailed `IsElem` errs => Handler errs ()
--- > example
--- >  = errFailed "Every attempt is a wholly new start, and a different kind of failure"
---
--- @since 0.1.2.0
-type family IsElem (x :: k) (list :: [k]) :: Constraint where
-  IsElem x (x ': xs) = ()
-  IsElem x (y ': xs) = IsElem x xs
+instance MonadError Error Handler where
+  throwError x = case lookup x errorMapping of
+    Just v -> Handler $ throwError v
+    -- Should not happen
+    Nothing -> Handler $ throwError "org.bluez.Error.Failed"
+  catchError x c = case lookup x (swap <$> errorMapping) of
+    Just v -> c v
+    Nothing -> c ErrorFailed
 
-class ThrowsFailed m where errFailed :: m a
-instance (ThrowsFailed `IsElem` errs) => ThrowsFailed (Handler errs) where
-  errFailed = Handler $ throwError "org.bluez.Error.Failed"
-
-class ThrowsInProgress m where errInProgress :: m a
-instance (ThrowsInProgress `IsElem` errs) => ThrowsInProgress (Handler errs) where
-  errInProgress = Handler $ throwError "org.bluez.Error.InProgress"
-
-class ThrowsNotPermitted m where errNotPermitted :: m a
-instance (ThrowsNotPermitted `IsElem` errs) => ThrowsNotPermitted (Handler errs) where
-  errNotPermitted = Handler $ throwError "org.bluez.Error.NotPermitted"
-
-class ThrowsNotAuthorized m where errNotAuthorized :: m a
-instance (ThrowsNotAuthorized `IsElem` errs) => ThrowsNotAuthorized (Handler errs) where
-  errNotAuthorized = Handler $ throwError "org.bluez.Error.NotAuthorized"
-
-class ThrowsNotSupported m where errNotSupported :: m a
-instance (ThrowsNotSupported `IsElem` errs) => ThrowsNotSupported (Handler errs) where
-  errNotSupported = Handler $ throwError "org.bluez.Error.NotSupported"
-
-class ThrowsInvalidValueLength m where errInvalidValueLength :: m a
-instance (ThrowsInvalidValueLength `IsElem` errs) => ThrowsInvalidValueLength (Handler errs) where
-  errInvalidValueLength = Handler $ throwError "org.bluez.Error.InvalidValueLength"
+errorMapping :: [(Error, T.Text)]
+errorMapping =
+  [ (ErrorFailed, "org.bluez.Error.Failed")
+  , (ErrorInProgress, "org.bluez.Error.InProgress")
+  , (ErrorNotPermitted, "org.bluez.Error.NotPermitted")
+  , (ErrorNotAuthorized, "org.bluez.Error.NotAuthorized")
+  , (ErrorNotSupported, "org.bluez.Error.NotSupported")
+  , (ErrorInvalidValueLength, "org.bluez.Error.InvalidValueLength")
+  ]
