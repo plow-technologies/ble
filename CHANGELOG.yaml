@@ -2,6 +2,16 @@ upcoming:
 
 releases:
 
+  - version: "0.2.0.0"
+    changes:
+
+      - description: Simplify handler type
+        notes: |
+            This is a backwards incompatible changed that simplifies the
+            Handler type so that it not longer takes a list of allowed errors.
+        authors: jkarni
+        date: 2017-03-01
+
   - version: "0.1.3.0"
     changes:
 
