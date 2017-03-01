@@ -6,11 +6,11 @@ import qualified Data.Serialize  as S
 
 import Bluetooth.Internal.Errors
 
-encodeRead :: S.Serialize a => ReadValueM a -> ReadValueM BS.ByteString
+encodeRead :: S.Serialize a => Handler a -> Handler BS.ByteString
 encodeRead h = S.encode <$> h
 
 encodeWrite :: (S.Serialize a)
-  => (a -> WriteValueM Bool) -> (BS.ByteString -> WriteValueM Bool)
+  => (a -> Handler Bool) -> (BS.ByteString -> Handler Bool)
 encodeWrite h v = case S.decode v of
-  Left _   -> errFailed
+  Left _   -> errorFailed
   Right v' -> h v'

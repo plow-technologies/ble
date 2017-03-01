@@ -94,20 +94,16 @@ module Bluetooth
   , encodeWrite
 
   -- * Handler
-  -- | @Handler err@ is a monad that allows the errors in the type-level list
-  -- @err@.
+  -- | @Handler@ is the monad BLE handlers run in.
   , Handler
-  , ReadValueM
-  , WriteValueM
 
-  -- ** Handler error classes
-  , ThrowsFailed(..)
-  , ThrowsInProgress(..)
-  , ThrowsNotPermitted(..)
-  , ThrowsNotAuthorized(..)
-  , ThrowsNotSupported(..)
-  , ThrowsInvalidValueLength(..)
-  , IsElem
+  -- ** Handler errors
+  , errorFailed
+  , errorInProgress
+  , errorNotPermitted
+  , errorNotSupported
+  , errorNotAuthorized
+  , errorInvalidValueLength
 
   -- * Re-exports
   , module Lens.Micro

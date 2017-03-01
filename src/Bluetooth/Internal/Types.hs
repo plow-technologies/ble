@@ -206,10 +206,10 @@ type CharacteristicBS = Characteristic BS.ByteString
 data Characteristic typ = Characteristic
   { characteristicUuid       :: UUID
   , characteristicProperties :: [CharacteristicProperty]
-  , characteristicReadValue  :: Maybe (ReadValueM typ)
+  , characteristicReadValue  :: Maybe (Handler typ)
   -- | Write a value. Note that the value is only writeable externally if the
   -- characteristic contains the CPWrite property *and* this is a Just.
-  , characteristicWriteValue :: Maybe (typ -> WriteValueM Bool)
+  , characteristicWriteValue :: Maybe (typ -> Handler Bool)
   -- | If @Nothing@, this characteristic does not send notifications.
   -- If @Just False@, the characteristic does not currently send notifications, but
   -- can be made to (with a @StartNotify@ method request).

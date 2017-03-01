@@ -76,7 +76,7 @@ testCharacteristic
       & readValue ?~ encodeRead go
       & properties .~ [CPRead]
   where
-    go :: ReadValueM BS.ByteString
+    go :: Handler BS.ByteString
     go = do
       liftIO $ putStrLn "Reading characteristic!"
       return "s"

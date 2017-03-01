@@ -36,13 +36,13 @@ getCounter ref
       & writeValue ?~ encodeWrite writeV
       & properties .~ [CPRead, CPWrite]
   where
-    readV :: ReadValueM Int
+    readV :: Handler Int
     readV = liftIO $ do
       v <- atomically $ modifyTVar' ref succ >> readTVar ref
       putStrLn $ "Value requested. New value: " ++ show v
       return v
 
-    writeV :: Int -> WriteValueM Bool
+    writeV :: Int -> Handler Bool
     writeV i = liftIO $ do
       v <- atomically $ swapTVar ref i
       putStrLn $ "Value changed to: " ++ show i

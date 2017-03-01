@@ -175,7 +175,7 @@ acceptingOptions handler opts = case opts ^. offset of
   Nothing -> handler
   Just v -> BS.drop (fromInteger $ toInteger v) <$> handler
 
-handlerToMethodHandler :: Handler errs a -> MethodHandlerT IO a
+handlerToMethodHandler :: Handler a -> MethodHandlerT IO a
 handlerToMethodHandler (Handler h) = MHT $ mapExceptT go h
   where
     go :: IO (Either T.Text a) -> WriterT [SomeSignal] IO (Either MsgError a)
