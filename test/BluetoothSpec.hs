@@ -24,6 +24,7 @@ spec = do
   advertiseSpec
   unadvertiseSpec
   {-notifySpec-}
+  getServiceSpec
 #endif
 
 registerApplicationSpec :: Spec
@@ -101,6 +102,19 @@ unadvertiseSpec = describe "unadvertise" $ before connect $ do
     {-_ <- runBluetoothM (testCharacteristic ^. stopNotify) conn-}
     {-readIORef isNotifying `shouldReturn` False-}
 
+getServiceSpec :: Spec
+getServiceSpec = describe "getService" $ before connect $ do
+
+  it "retrieves services by UUID" $ \conn -> do
+    v <- runBluetoothM (registerApplication testApp) conn
+    h <- flip runBluetoothM conn $ do
+          Right service <- getService (testService ^. uuid)
+          Just res <- service ^. at (testCharacteristic ^. uuid) . readValue
+          return res
+    runHandler h `shouldReturn` "response"
+
+  it "fails if the application does not exist" \conn -> $ pending
+
 -- * Test service
 
 testApp :: Application
@@ -122,7 +136,7 @@ testCharacteristic
     go :: Handler BS.ByteString
     go = do
       liftIO $ putStrLn "Reading characteristic!"
-      return "s"
+      return "response"
 
 testAdv :: WithObjectPath Advertisement
 testAdv

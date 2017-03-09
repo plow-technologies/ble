@@ -130,6 +130,42 @@ triggerNotification (ApplicationRegistered _) c = do
         Left e -> throwError . DBusError . MethodErrorMessage $ errorBody e
         Right val -> return val
 
+-- | Get a service by UUID. Returns Nothing if the service could not be found.
+getService :: UUID -> BluetoothM (Maybe Service)
+getService serviceUUID = do
+  services <- getAllServices
+  return $ case filter (\x -> x ^. uuid == serviceUUID) services of
+    [] -> Nothing
+    -- This should never be a list with more than one element.
+    (x:_) -> Just x
+
+-- | Get all registered services.
+getAllServices :: BluetoothM [Service]
+getAllServices = do
+  conn <- ask
+  objects <- toBluetoothM . const $ do
+    callMethod bluezName "/" (T.pack objectManagerIFace)
+       "GetManagedObjects" () [] $ dbusConn conn
+
+  -- We need to construct services manually, since we get the characteristics
+  -- separately.
+  let characteristics =
+       [ objPath
+       | (objPath, ifaces) <- objects
+       , gattCharacteristicIFace `elem` (fst <$> ifaces)
+       ]
+  let services =
+       [ objPath
+       | (objPath, ifaces) <- objects
+       , gattServiceIFace `elem` (fst <$> ifaces)
+       ]
+  return []
+  {-let processService servicePath = toBluetoothM . const $ do-}
+        {-callMethod bluezName servicePath (T.pack gattServiceIFace)-}
+          {-"GetAll" () [] $ dbusConn conn-}
+
+
+
 -- * Constants
 
 bluezName :: T.Text

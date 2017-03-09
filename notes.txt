@@ -1,0 +1,9 @@
+# Higher-level API
+
+service :=
+   [ <uuid> :=> <char>
+   ...
+   ]
+
+char :=
+
