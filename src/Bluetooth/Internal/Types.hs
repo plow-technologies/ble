@@ -12,6 +12,7 @@ module Bluetooth.Internal.Types where
 import Control.Monad.Except   (ExceptT (ExceptT), MonadError, runExceptT)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Reader   (MonadReader, ReaderT (ReaderT), runReaderT)
+import Control.Concurrent (newMVar, MVar, modifyMVar)
 import Data.Default.Class     (Default (def))
 import Data.IORef
 import Data.Maybe             (fromMaybe)
@@ -28,6 +29,7 @@ import DBus.Types             (dBusConnectionName, root)
 import GHC.Generics           (Generic)
 import Lens.Micro
 import Lens.Micro.TH          (makeFields)
+import System.IO.Unsafe (unsafePerformIO)
 
 import qualified Data.ByteString as BS
 import qualified Data.Map        as Map
@@ -210,17 +212,28 @@ data Characteristic typ = Characteristic
   -- | Write a value. Note that the value is only writeable externally if the
   -- characteristic contains the CPWrite property *and* this is a Just.
   , characteristicWriteValue :: Maybe (typ -> Handler Bool)
-  -- | If @Nothing@, this characteristic does not send notifications.
-  -- If @Just False@, the characteristic does not currently send notifications, but
-  -- can be made to (with a @StartNotify@ method request).
-  -- If @Just True@, the characteristic currently sends notifications (and can
-  -- be made to stop with a @StopNotify@ method request).
-  -- **NOTE**: Notifications do not currently work.
-  , characteristicNotifying  :: Maybe (IORef Bool)
+  , characteristicSignal     :: Maybe (Handler ())
   } deriving (Generic)
 
 makeFields ''Characteristic
 
+-- This is essentialy the unsafePerformIO memoization trick
+charMap :: UUID -> MVar Bool
+charMap = unsafePerformIO $ do
+  cm <- newMVar $ Map.empty
+  return $ \uuid' -> unsafePerformIO $ do
+    modifyMVar cm $ \curMap -> case Map.lookup uuid' curMap of
+      Nothing -> do
+        e <- newMVar False
+        return (Map.insert uuid' e curMap, e)
+      Just v  -> return (curMap, v)
+{-# NOINLINE charMap #-}
+
+
+{-characteristicIsNotifying :: UUID -> (IO Bool, Bool -> IO ())-}
+{-characteristicIsNotifying u = do-}
+  {-mvar <- newMVar False-}
+  {-return (-}
 
 instance IsString (Characteristic a) where
   fromString x = Characteristic (fromString x) [] Nothing Nothing Nothing
