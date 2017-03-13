@@ -51,6 +51,7 @@ module Bluetooth
   , advertisementFor
   , connect
   , runBluetoothM
+  , runHandler
 
   -- * Field lenses
   , uuid

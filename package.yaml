@@ -44,7 +44,7 @@ dependencies:
   - base >= 4.7 && < 4.10
   - bytestring >= 0.10 && < 0.11
   - text >= 1 && < 2
-  - d-bus >= 0.1 && < 0.2
+  - d-bus >= 0.1.5 && < 0.2
   - uuid >= 1 && < 2
   - mtl >= 2.2 && < 2.3
   - transformers >= 0.4 && < 0.6
