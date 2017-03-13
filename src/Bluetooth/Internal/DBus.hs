@@ -8,10 +8,8 @@ import DBus
 import DBus.Signal          (execSignalT)
 import Lens.Micro
 
-import qualified Data.ByteString as BS
 import qualified Data.Map        as Map
 import qualified Data.Text       as T
-
 
 import Bluetooth.Internal.HasInterface
 import Bluetooth.Internal.Interfaces
@@ -86,35 +84,27 @@ advertisementFor app = WOP p adv
     p = app ^. path & toText %~ (</> "adv")
 
 
--- | Write to characteristic (if possible). Returns True if characterstic was
--- successfully written.
-writeChrc :: ApplicationRegistered -> CharacteristicBS -> BS.ByteString -> BluetoothM Bool
-writeChrc ApplicationRegistered c v = case c ^. writeValue of
-  Nothing -> return False
-  Just f -> runEff $ do
-     changed <- handlerToMethodHandler (f v)
-     -- The read value may not be the same as the written value, so we make a
-     -- best effort to get the read value, otherwise defaulting to the written
-     -- one.
-     theVal <- liftIO $ case c ^. readValue of
-       Nothing -> return v
-       Just readHandler -> do
-         res <- runHandler readHandler
-         case res of
-           Left _ -> return v
-           Right x -> return x
-     mPath <- liftIO $ readIORef $ objectPathOf (c ^. uuid)
-     case mPath of
-       Nothing -> return ()
-       Just path' -> when changed $ propertyChanged (valProp $ WOP path' c) theVal
-     return changed
+-- | Triggers notifications or indications.
+triggerNotification :: ApplicationRegistered -> CharacteristicBS -> BluetoothM ()
+triggerNotification ApplicationRegistered c = do
+   case c ^. readValue of
+     Nothing -> throwError "Handler does not have a readValue implementation!"
+     Just readHandler -> do
+       res' <- liftIO $ runHandler readHandler
+       res <- case res' of
+         Left e -> throwError $ BLEError e
+         Right v -> return v
+       mPath <- liftIO $ readIORef $ objectPathOf (c ^. uuid)
+       case mPath of
+         Nothing -> throwError "UUID not found - are you sure you registered the application containing it?"
+         Just path' -> runEff $ propertyChanged (valProp $ WOP path' c) res
   where
     runEff :: MethodHandlerT IO x -> BluetoothM x
     runEff act = do
       conn <- asks dbusConn
       res <- liftIO $ execSignalT act conn
       case res of
-        Left e -> throwError $ MethodErrorMessage $ errorBody e
+        Left e -> throwError . DBusError . MethodErrorMessage $ errorBody e
         Right val -> return val
 
 -- * Constants

@@ -72,9 +72,6 @@ type ChangedProperties = 'TypeStruct
 
 -- A helper function for constructing D-Bus Property interfaces. Pass a
 -- non-Nothing if the object supports the PropertiesChanged signal.
---
--- The 'Get' and 'Set' methods don't seem to be used by the Bluez DBus API, but
--- are supplied for compliance with the D-Bus Property Interface.
 defPropIFace :: forall a.
   ( Representable a
   , RepType a ~ AnyDBusDict
@@ -82,10 +79,7 @@ defPropIFace :: forall a.
   => Maybe ObjectPath -> T.Text -> a -> Interface
 defPropIFace opath supportedIFaceName val =
     Interface
-      { interfaceMethods = [getAll, get, set]
-      -- The 'd-bus' library's implementation of @DBus.Property.property@ does
-      -- not create an independent signal for PropertyChanged, which makes me
-      -- wonder whether this is the right thing to do.
+      { interfaceMethods = [getAll]
       , interfaceSignals = signals
       , interfaceAnnotations = []
       , interfaceProperties = []
@@ -101,28 +95,6 @@ defPropIFace opath supportedIFaceName val =
          go iface
            | iface == supportedIFaceName = return val
            | otherwise = methodError invalidArgs
-
-     get
-       = Method (repMethod go)
-                "Get"
-                ("interface" :> Done)
-                ("rep" :> Done)
-       where
-         go :: T.Text -> MethodHandlerT IO a
-         go iface = liftIO (putStrLn "called!") >> error "not impl"
-           {-| iface == supportedIFaceName = return val-}
-           {-| otherwise = methodError invalidArgs-}
-
-     set
-       = Method (repMethod go)
-                "Set"
-                ("interface" :> Done)
-                ("rep" :> Done)
-       where
-         go :: T.Text -> MethodHandlerT IO a
-         go iface = liftIO (putStrLn "called!") >> error "not impl"
-           {-| iface == supportedIFaceName = return val-}
-           {-| otherwise = methodError invalidArgs-}
 
      signals = case opath of
        Nothing -> []

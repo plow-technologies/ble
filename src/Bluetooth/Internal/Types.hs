@@ -9,10 +9,11 @@
 module Bluetooth.Internal.Types where
 
 
-import Control.Monad.Except   (ExceptT (ExceptT), MonadError, runExceptT)
+import Control.Concurrent     (MVar, modifyMVar, newMVar)
+import Control.Monad.Except   (ExceptT (ExceptT), MonadError, runExceptT,
+                               withExceptT)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Reader   (MonadReader, ReaderT (ReaderT), runReaderT)
-import Control.Concurrent (newMVar, MVar, modifyMVar)
 import Data.Default.Class     (Default (def))
 import Data.IORef
 import Data.Maybe             (fromMaybe)
@@ -29,7 +30,7 @@ import DBus.Types             (dBusConnectionName, root)
 import GHC.Generics           (Generic)
 import Lens.Micro
 import Lens.Micro.TH          (makeFields)
-import System.IO.Unsafe (unsafePerformIO)
+import System.IO.Unsafe       (unsafePerformIO)
 
 import qualified Data.ByteString as BS
 import qualified Data.Map        as Map
@@ -438,16 +439,24 @@ connect = do
 
 -- * BluetoothM
 
+data Error
+  = DBusError MethodError
+  | BLEError T.Text
+  deriving (Show, Generic)
+
+instance IsString Error where
+  fromString = BLEError . fromString
+
 newtype BluetoothM a
-  = BluetoothM ( ReaderT Connection (ExceptT MethodError IO) a )
-  deriving (Functor, Applicative, Monad, MonadIO, MonadError MethodError,
+  = BluetoothM ( ReaderT Connection (ExceptT Error IO) a )
+  deriving (Functor, Applicative, Monad, MonadIO, MonadError Error,
             MonadReader Connection)
 
-runBluetoothM :: BluetoothM a -> Connection -> IO (Either MethodError a)
+runBluetoothM :: BluetoothM a -> Connection -> IO (Either Error a)
 runBluetoothM (BluetoothM e) conn = runExceptT $ runReaderT e conn
 
 toBluetoothM :: (Connection -> IO (Either MethodError a)) -> BluetoothM a
-toBluetoothM = BluetoothM . ReaderT . fmap ExceptT
+toBluetoothM = BluetoothM . ReaderT . fmap (withExceptT DBusError . ExceptT)
 
 
 -- * Assorted
@@ -458,10 +467,9 @@ toBluetoothM = BluetoothM . ReaderT . fmap ExceptT
 data ApplicationRegistered = ApplicationRegistered
   deriving (Eq, Show, Read, Generic)
 
--- | Whether an update was succesful or not.
-data UpdateResult
-  = Updated
-  | NotUpdated
+data Status
+  = Success
+  | Failure
   deriving (Eq, Show, Read, Ord, Enum, Generic)
 
 {- Note [WithObjectPath]

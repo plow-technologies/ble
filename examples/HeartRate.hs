@@ -2,7 +2,7 @@
 module Main (main) where
 
 -- This example contains a demonstration of the standard Heart Rate Service
--- (HRS). It serves as an examples of using notifications. (NOT YET FUNCTIONAL)
+-- (HRS). It serves as an examples of using notifications.
 import Bluetooth
 import Control.Concurrent
 import Control.Monad
@@ -29,14 +29,11 @@ main = do
       return registered
     Left e -> error $ "Error starting application" ++ show e
   forever $ do
-    newValue :: Int <- randomRIO (50, 150)
-    -- Note how here we call 'writeChrc' to update the value. If we simply
-    -- changed the IORef directly, we wouldn't get notifications (or
-    -- indications) sent out automatically.
-    res <- runBluetoothM (writeChrc registered (heartRateMeasurement s) $ S.encode newValue) conn
+    newValue <- randomRIO (50, 150)
+    writeIORef heartRateRef newValue
+    res <- runBluetoothM (triggerNotification registered $ heartRateMeasurement s) conn
     case res of
-      Right True  -> putStrLn "Value updated!"
-      Right False -> putStrLn "Error updating value!"
+      Right ()  -> putStrLn "Notification sent!"
       Left  e     -> error $ "Bluetooth error:\n" ++ show e
     -- We update the value every ten seconds
     threadDelay (10 ^ 7)

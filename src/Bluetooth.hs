@@ -71,7 +71,7 @@ module Bluetooth
 
   -- * Notifications
   , characteristicIsNotifying
-  , writeChrc
+  , triggerNotification
 
 
 
