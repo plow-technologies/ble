@@ -7,6 +7,7 @@ module BluetoothSpec (spec) where
 
 import Bluetooth
 import Control.Monad.IO.Class
+import Data.Either            (isRight)
 import DBus
 import Test.Hspec
 
@@ -28,7 +29,7 @@ registerApplicationSpec = describe "registerApplication" $ before connect $ do
 
   it "registers the service with bluez" $ \conn -> do
     v <- runBluetoothM (registerApplication testApp) conn
-    v `shouldBe` Right ()
+    v `shouldSatisfy` isRight
     -- We verify that the application is in fact registered by checking that
     -- attempting to register it again throws an AlreadyExists error.
     Left err <- runBluetoothM (registerApplication testApp) conn
@@ -39,7 +40,7 @@ advertiseSpec = describe "advertise" $ before connect $ do
 
   let checkAdvert ad conn = do
         v <- runBluetoothM (advertise ad) conn
-        v `shouldBe` Right ()
+        v `shouldSatisfy` isRight
         -- We verify that the advertisement was registered by checking that
         -- attempting to register it again throws an AlreadyExists error.
         Left err <- runBluetoothM (advertise ad) conn
