@@ -152,6 +152,7 @@ executable hrs
     , cereal >= 0.4 && < 0.6
     , data-default-class >= 0.0 && < 0.2
     , ble
+    , hslogger
   if flag(hasBluez)
     cpp-options: -DBluez
   other-modules:

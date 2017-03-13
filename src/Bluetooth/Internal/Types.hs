@@ -216,11 +216,6 @@ data Characteristic typ = Characteristic
 
 makeFields ''Characteristic
 
--- | This datatype, which is kept opaque, is returned when an application is
--- successfully registered, and required as an argument from functions that
--- should only be called after the application has been registered.
-data ApplicationRegistered = ApplicationRegistered
-  deriving (Eq, Show, Read, Generic)
 
 -- This is essentialy the unsafePerformIO memoization trick
 characteristicIsNotifying :: UUID -> MVar Bool
@@ -455,6 +450,19 @@ toBluetoothM :: (Connection -> IO (Either MethodError a)) -> BluetoothM a
 toBluetoothM = BluetoothM . ReaderT . fmap ExceptT
 
 
+-- * Assorted
+
+-- | This datatype, which is kept opaque, is returned when an application is
+-- successfully registered, and required as an argument from functions that
+-- should only be called after the application has been registered.
+data ApplicationRegistered = ApplicationRegistered
+  deriving (Eq, Show, Read, Generic)
+
+-- | Whether an update was succesful or not.
+data UpdateResult
+  = Updated
+  | NotUpdated
+  deriving (Eq, Show, Read, Ord, Enum, Generic)
 
 {- Note [WithObjectPath]
 ~~~~~~~~~~~~~~~~~~~~~~~~~

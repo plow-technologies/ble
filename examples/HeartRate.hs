@@ -10,6 +10,7 @@ import Control.Monad.IO.Class
 import Data.IORef
 import Data.Monoid
 import System.Random          (randomRIO)
+import System.Log.Logger
 
 import qualified Data.Serialize as S
 import qualified Data.ByteString as BS
@@ -17,6 +18,7 @@ import qualified Data.ByteString as BS
 
 main :: IO ()
 main = do
+  updateGlobalLogger rootLoggerName (setLevel DEBUG)
   heartRateRef <- newIORef 0
   let s = AppState heartRateRef
   conn <- connect
@@ -27,10 +29,15 @@ main = do
       return registered
     Left e -> error $ "Error starting application" ++ show e
   forever $ do
-    newValue <- randomRIO (50, 150)
-    _ <- runBluetoothM (writeChrc registered (heartRateMeasurement s) $ S.encode newValue) conn
-    writeIORef heartRateRef newValue
-    putStrLn "Value updated!"
+    newValue :: Int <- randomRIO (50, 150)
+    -- Note how here we call 'writeChrc' to update the value. If we simply
+    -- changed the IORef directly, we wouldn't get notifications (or
+    -- indications) sent out automatically.
+    res <- runBluetoothM (writeChrc registered (heartRateMeasurement s) $ S.encode newValue) conn
+    case res of
+      Right True  -> putStrLn "Value updated!"
+      Right False -> putStrLn "Error updating value!"
+      Left  e     -> error $ "Bluetooth error:\n" ++ show e
     -- We update the value every ten seconds
     threadDelay (10 ^ 7)
 

@@ -2,7 +2,7 @@ module Bluetooth.Internal.DBus where
 
 import Control.Monad.Except
 import Control.Monad.Reader
-import Data.IORef           (readIORef)
+import Data.IORef           (readIORef, writeIORef)
 import Data.Monoid          ((<>))
 import DBus
 import DBus.Signal          (execSignalT)
@@ -17,6 +17,7 @@ import Bluetooth.Internal.HasInterface
 import Bluetooth.Internal.Interfaces
 import Bluetooth.Internal.Types
 import Bluetooth.Internal.Utils
+import Bluetooth.Internal.Errors
 
 -- | Registers an application and advertises it. If you would like to have
 -- finer-grained control of the advertisement, use @registerApplication@ and
@@ -50,11 +51,16 @@ addAllObjs conn app = do
     addObject conn p
       $  (WOP p s `withInterface` gattServiceIFaceP)
       <> (WOP p s `withInterface` propertiesIFaceP)
+    registerObjectPath (s ^. uuid) p
     forM_ (zip [0..] (s ^. characteristics)) $ \(i', c) -> do
       let p' = characteristicObjectPath p i'
       addObject conn p'
         $ (WOP p' c `withInterface` gattCharacteristicIFaceP)
        <> (WOP p' c `withInterface` propertiesIFaceP)
+      registerObjectPath (c ^. uuid) p'
+   where
+     registerObjectPath :: UUID -> ObjectPath -> IO ()
+     registerObjectPath uuid' op = writeIORef (objectPathOf uuid') (Just op)
 
 -- | Advertise a set of services.
 advertise :: WithObjectPath Advertisement -> BluetoothM ()
@@ -87,10 +93,20 @@ writeChrc ApplicationRegistered c v = case c ^. writeValue of
   Nothing -> return False
   Just f -> runEff $ do
      changed <- handlerToMethodHandler (f v)
+     -- The read value may not be the same as the written value, so we make a
+     -- best effort to get the read value, otherwise defaulting to the written
+     -- one.
+     theVal <- liftIO $ case c ^. readValue of
+       Nothing -> return v
+       Just readHandler -> do
+         res <- runHandler readHandler
+         case res of
+           Left _ -> return v
+           Right x -> return x
      mPath <- liftIO $ readIORef $ objectPathOf (c ^. uuid)
      case mPath of
        Nothing -> return ()
-       Just path' -> when changed $ propertyChanged (valProp $ WOP path' c) v
+       Just path' -> when changed $ propertyChanged (valProp $ WOP path' c) theVal
      return changed
   where
     runEff :: MethodHandlerT IO x -> BluetoothM x

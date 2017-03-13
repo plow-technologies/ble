@@ -82,7 +82,7 @@ defPropIFace :: forall a.
   => Maybe ObjectPath -> T.Text -> a -> Interface
 defPropIFace opath supportedIFaceName val =
     Interface
-      { interfaceMethods = [getAll]
+      { interfaceMethods = [getAll, get, set]
       -- The 'd-bus' library's implementation of @DBus.Property.property@ does
       -- not create an independent signal for PropertyChanged, which makes me
       -- wonder whether this is the right thing to do.
@@ -101,6 +101,28 @@ defPropIFace opath supportedIFaceName val =
          go iface
            | iface == supportedIFaceName = return val
            | otherwise = methodError invalidArgs
+
+     get
+       = Method (repMethod go)
+                "Get"
+                ("interface" :> Done)
+                ("rep" :> Done)
+       where
+         go :: T.Text -> MethodHandlerT IO a
+         go iface = liftIO (putStrLn "called!") >> error "not impl"
+           {-| iface == supportedIFaceName = return val-}
+           {-| otherwise = methodError invalidArgs-}
+
+     set
+       = Method (repMethod go)
+                "Set"
+                ("interface" :> Done)
+                ("rep" :> Done)
+       where
+         go :: T.Text -> MethodHandlerT IO a
+         go iface = liftIO (putStrLn "called!") >> error "not impl"
+           {-| iface == supportedIFaceName = return val-}
+           {-| otherwise = methodError invalidArgs-}
 
      signals = case opath of
        Nothing -> []
@@ -134,6 +156,7 @@ instance HasInterface (WithObjectPath CharacteristicBS) Properties where
 instance HasInterface Advertisement Properties where
   getInterface adv _
     = defPropIFace Nothing (T.pack leAdvertisementIFace) adv
+
 
 -- * GattService
 

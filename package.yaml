@@ -111,6 +111,7 @@ executables:
     source-dirs:     examples
     dependencies:
       - ble
+      - hslogger
   auth:
     main:            Auth.hs
     source-dirs:     examples
