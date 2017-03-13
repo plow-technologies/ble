@@ -9,10 +9,8 @@ import Bluetooth
 import Control.Monad.IO.Class
 import DBus
 import Test.Hspec
-import Data.IORef
 
 import qualified Data.ByteString as BS
-
 
 
 spec :: Spec
@@ -22,7 +20,7 @@ spec = do
 #else
   registerApplicationSpec
   advertiseSpec
-  notifySpec
+  {-notifySpec-}
 #endif
 
 registerApplicationSpec :: Spec
@@ -59,22 +57,22 @@ advertiseSpec = describe "advertise" $ before connect $ do
     let adv = testAdv & value . manufacturerData . at 1 ?~ "hi"
     checkAdvert adv conn
 
-notifySpec :: Spec
-notifySpec = describe "notification" $ before connect $ do
+{-notifySpec :: Spec-}
+{-notifySpec = describe "notification" $ before connect $ do-}
 
-  it "accepts StartNotify" $ \conn -> do
-    readIORef isNotifying `shouldReturn` False
-    v <- runBluetoothM (registerApplication testApp) conn
-    _ <- runBluetoothM (testCharacteristic ^. startNotify) conn
-    readIORef isNotifying `shouldReturn` True
+  {-it "accepts StartNotify" $ \conn -> do-}
+    {-readIORef isNotifying `shouldReturn` False-}
+    {-v <- runBluetoothM (registerApplication testApp) conn-}
+    {-_ <- runBluetoothM (testCharacteristic ^. startNotify) conn-}
+    {-readIORef isNotifying `shouldReturn` True-}
 
-  it "accepts StopNotify" $ \conn -> do
-    readIORef isNotifying `shouldReturn` False
-    v <- runBluetoothM (registerApplication testApp) conn
-    _ <- runBluetoothM (testCharacteristic ^. startNotify) conn
-    readIORef isNotifying `shouldReturn` True
-    _ <- runBluetoothM (testCharacteristic ^. stopNotify) conn
-    readIORef isNotifying `shouldReturn` False
+  {-it "accepts StopNotify" $ \conn -> do-}
+    {-readIORef isNotifying `shouldReturn` False-}
+    {-v <- runBluetoothM (registerApplication testApp) conn-}
+    {-_ <- runBluetoothM (testCharacteristic ^. startNotify) conn-}
+    {-readIORef isNotifying `shouldReturn` True-}
+    {-_ <- runBluetoothM (testCharacteristic ^. stopNotify) conn-}
+    {-readIORef isNotifying `shouldReturn` False-}
 
 -- * Test service
 
@@ -93,7 +91,6 @@ testCharacteristic
   = "cdcb58aa-7e4c-4d22-b0bf-a90cd67ba60b"
       & readValue ?~ encodeRead go
       & properties .~ [CPRead, CPNotify]
-      & signal ?~ _
   where
     go :: Handler BS.ByteString
     go = do
@@ -103,10 +100,6 @@ testCharacteristic
 testAdv :: WithObjectPath Advertisement
 testAdv
   = advertisementFor testApp
-
-isNotifying :: IORef Bool
-isNotifying = unsafePerformIO $ newIORef False
-{-# NOINLINE isNotifying #-}
 
 -- * Orphans
 

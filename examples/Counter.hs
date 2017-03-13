@@ -15,7 +15,7 @@ main = do
   conn <- connect
   x <- runBluetoothM (registerAndAdvertiseApplication $ app ref) conn
   case x of
-    Right () -> putStrLn "Started BLE counter application!"
+    Right _ -> putStrLn "Started BLE counter application!"
     Left e -> error $ "Error starting application " ++ show e
   threadDelay maxBound
 

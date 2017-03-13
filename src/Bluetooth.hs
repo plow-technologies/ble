@@ -57,7 +57,6 @@ module Bluetooth
   , properties
   , readValue
   , writeValue
-  , notifying
   , characteristics
   , services
   , path
@@ -70,7 +69,8 @@ module Bluetooth
   , includeTxPower
   , connectionName
 
-  -- * Updating values with notification
+  -- * Notifications
+  , characteristicIsNotifying
   , writeChrc
 
 

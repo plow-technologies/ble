@@ -8,32 +8,34 @@ import Control.Concurrent
 import Control.Monad
 import Control.Monad.IO.Class
 import Data.IORef
+import Data.Monoid
 import System.Random          (randomRIO)
+
+import qualified Data.Serialize as S
+import qualified Data.ByteString as BS
 
 
 main :: IO ()
 main = do
   heartRateRef <- newIORef 0
-  isNotifyingRef <- newIORef False
-  let s = AppState heartRateRef isNotifyingRef
+  let s = AppState heartRateRef
   conn <- connect
   x <- runBluetoothM (registerAndAdvertiseApplication $ app s) conn
-  case x of
-    Right () -> putStrLn "Started BLE Heart Rate Service application!"
+  registered <- case x of
+    Right registered -> do
+      putStrLn "Started BLE Heart Rate Service application!"
+      return registered
     Left e -> error $ "Error starting application" ++ show e
   forever $ do
     newValue <- randomRIO (50, 150)
-    {-writeChrc (heartRateMeasurement s) newValue-}
+    _ <- runBluetoothM (writeChrc registered (heartRateMeasurement s) $ S.encode newValue) conn
     writeIORef heartRateRef newValue
     putStrLn "Value updated!"
-    nots <- readIORef isNotifyingRef
-    putStrLn $ if nots then "Notifying" else "Not notifying"
     -- We update the value every ten seconds
     threadDelay (10 ^ 7)
 
 data AppState = AppState
   { currentHeartRate :: IORef Int
-  , isNotifying      :: IORef Bool
   }
 
 app :: AppState -> Application
@@ -49,18 +51,20 @@ heartRateService appState
 heartRateMeasurement :: AppState -> CharacteristicBS
 heartRateMeasurement appState
   = "00002a37-0000-1000-8000-00805f9b34fb"
-     & readValue ?~ encodeRead (liftIO . readIORef $ currentHeartRate appState)
+     & readValue ?~ fmap heartRateToBS (liftIO . readIORef $ currentHeartRate appState)
      -- Even though we add a @writeValue@, this does not mean that the
      -- characteristic is writable (for that, we would need to add the CPWrite
      -- property to it). Instead, we can use the writeValue internally to
      -- update the value and send notifications each time the value is changed.
      & writeValue ?~ encodeWrite (liftIO <$> write)
      & properties .~ [CPNotify, CPRead]
-     & notifying ?~ isNotifying appState
   where
     write v = do
       writeIORef (currentHeartRate appState) v
       return True
+
+heartRateToBS :: Int -> BS.ByteString
+heartRateToBS i = "0x06" <> S.encode i
 
 bodySensorLocation :: CharacteristicBS
 bodySensorLocation

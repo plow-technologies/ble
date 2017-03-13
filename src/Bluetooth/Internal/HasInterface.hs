@@ -1,9 +1,10 @@
 module Bluetooth.Internal.HasInterface where
 
 
+import Control.Concurrent          (readMVar, swapMVar, modifyMVar_)
 import Control.Monad.Except        (liftIO, mapExceptT)
+import Control.Monad
 import Control.Monad.Writer.Strict (WriterT)
-import Data.IORef
 import Data.Proxy
 import Data.Word                   (Word16)
 import DBus
@@ -118,9 +119,9 @@ instance HasInterface (WithObjectPath Service) Properties where
     = defPropIFace (Just $ service ^. path) (T.pack gattServiceIFace) service
 
 instance HasInterface (WithObjectPath CharacteristicBS) Properties where
-  getInterface char _ = case char ^. value . notifying of
-    Nothing -> baseIface
-    Just _  -> baseIface { interfaceProperties = SomeProperty prop : interfaceProperties baseIface }
+  getInterface char _
+    = baseIface { interfaceProperties = SomeProperty prop
+                                      : interfaceProperties baseIface }
    where
      baseIface = defPropIFace (Just $ char ^. path) (T.pack gattCharacteristicIFace) char
      prop = mkProperty (char ^. path)
@@ -192,6 +193,7 @@ instance HasInterface (WithObjectPath CharacteristicBS) GattCharacteristic where
       , interfaceProperties = [ SomeProperty uuid'
                               , SomeProperty service
                               , SomeProperty flags
+                              , SomeProperty notifying
                               , SomeProperty $ valProp char
                               ]
       }
@@ -211,24 +213,22 @@ instance HasInterface (WithObjectPath CharacteristicBS) GattCharacteristic where
         where
           go writeTheVal newVal = do
             res <- handlerToMethodHandler $ writeTheVal newVal
-            nots <- liftIO $ sequence $ readIORef <$> char ^. value . notifying
-            liftIO $ print (nots, res)
-            {-when (nots == Just True && res) $ propertyChanged val newVal-}
+            nots <- liftIO $ readMVar $
+              characteristicIsNotifying (char ^. value . uuid)
+            when (nots && res) $ propertyChanged (valProp char) newVal
             return res
 
       stopNotify = Method (repMethod go) "StopNotify" Done Done
         where
           go :: MethodHandlerT IO ()
-          go = case char ^. value . notifying of
-            Nothing -> return ()
-            Just r -> liftIO $ writeIORef r False
+          go = liftIO . void $
+            swapMVar (characteristicIsNotifying $ char ^. value . uuid) False
 
       startNotify = Method (repMethod go) "StartNotify" Done Done
         where
           go :: MethodHandlerT IO ()
-          go = case char ^. value . notifying of
-            Nothing -> return ()
-            Just r -> liftIO $ writeIORef r True
+          go = liftIO . void $
+            swapMVar (characteristicIsNotifying $ char ^. value . uuid) True
 
       uuid' :: Property (RepType UUID)
       uuid' = Property
@@ -260,6 +260,21 @@ instance HasInterface (WithObjectPath CharacteristicBS) GattCharacteristic where
         , propertySet = Nothing
         , propertyEmitsChangedSignal = PECSFalse
         }
+
+      notifying :: Property (RepType Bool)
+      notifying = Property
+        { propertyPath = objectPath $ (char ^. path . toText) </> "Notifying"
+        , propertyInterface = T.pack gattCharacteristicIFace
+        , propertyName = "Notifying"
+        , propertyGet = Just $ liftIO $ toRep <$> readMVar mvar
+        , propertySet = Just $ \new -> liftIO $ do
+             case fromRep new of
+               Nothing -> return False
+               Just v  -> modifyMVar_ mvar (const $ return v) >> return True
+        , propertyEmitsChangedSignal = PECSFalse
+        }
+        where
+          mvar = characteristicIsNotifying (char ^. value . uuid)
 
 valProp :: WithObjectPath (CharacteristicBS) -> Property (RepType BS.ByteString)
 valProp char = mkProperty (char ^. path)

@@ -2,7 +2,11 @@ flags: {}
 extra-package-dbs: []
 packages:
 - '.'
+- location:
+    git: git@github.com:Philonous/d-bus.git
+    commit: 803d55c71f4d5e22663eecb6a01198cd7c2b280c
+  extra-dep: true
 extra-deps:
-- d-bus-0.1.5
+    # - d-bus-0.1.5
 - xml-picklers-0.3.6
 resolver: lts-7.13

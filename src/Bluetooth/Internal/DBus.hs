@@ -1,16 +1,17 @@
 module Bluetooth.Internal.DBus where
 
-import Control.Monad.Error.Class (throwError)
+import Control.Monad.Except
 import Control.Monad.Reader
-import Data.IORef                (readIORef)
-import Data.Monoid               ((<>))
+import Data.IORef           (readIORef)
+import Data.Monoid          ((<>))
 import DBus
-import DBus.Signal               (execSignalT)
+import DBus.Signal          (execSignalT)
 import Lens.Micro
 
-import qualified Data.Map       as Map
-import qualified Data.Serialize as S
-import qualified Data.Text      as T
+import qualified Data.ByteString as BS
+import qualified Data.Map        as Map
+import qualified Data.Text       as T
+
 
 import Bluetooth.Internal.HasInterface
 import Bluetooth.Internal.Interfaces
@@ -20,19 +21,21 @@ import Bluetooth.Internal.Utils
 -- | Registers an application and advertises it. If you would like to have
 -- finer-grained control of the advertisement, use @registerApplication@ and
 -- @advertise@.
-registerAndAdvertiseApplication :: Application -> BluetoothM ()
+registerAndAdvertiseApplication :: Application -> BluetoothM ApplicationRegistered
 registerAndAdvertiseApplication app = do
-  registerApplication app
+  reg <- registerApplication app
   advertise (advertisementFor app)
+  return reg
 
 -- | Registers an application (set of services) with Bluez.
-registerApplication :: Application -> BluetoothM ()
+registerApplication :: Application -> BluetoothM ApplicationRegistered
 registerApplication app = do
   conn <- ask
   addAllObjs conn app
-  toBluetoothM . const
+  () <- toBluetoothM . const
     $ callMethod bluezName bluezPath (T.pack gattManagerIFace) "RegisterApplication"  args []
     $ dbusConn conn
+  return ApplicationRegistered
   where
     args :: (ObjectPath, Map.Map T.Text Any)
     args = (app ^. path, Map.empty)
@@ -76,16 +79,18 @@ advertisementFor app = WOP p adv
     adv = def & serviceUUIDs .~ (app ^.. services . traversed . uuid)
     p = app ^. path & toText %~ (</> "adv")
 
--- | Write a characteristic (if possible). Returns True if characterstic was
+
+-- | Write to characteristic (if possible). Returns True if characterstic was
 -- successfully written.
-writeChrc :: S.Serialize x => WithObjectPath CharacteristicBS -> x -> BluetoothM Bool
-writeChrc c v = case (c ^. value . writeValue, c ^. value . notifying) of
-  (Nothing, _) -> return False
-  (Just f, Nothing) -> runEff . handlerToMethodHandler $ f (S.encode v)
-  (Just f, Just r)  -> runEff $ do
-     changed <- handlerToMethodHandler (f $ S.encode v)
-     notify <- liftIO $ readIORef r
-     when (changed && notify) $ propertyChanged (valProp c) (S.encode v)
+writeChrc :: ApplicationRegistered -> CharacteristicBS -> BS.ByteString -> BluetoothM Bool
+writeChrc ApplicationRegistered c v = case c ^. writeValue of
+  Nothing -> return False
+  Just f -> runEff $ do
+     changed <- handlerToMethodHandler (f v)
+     mPath <- liftIO $ readIORef $ objectPathOf (c ^. uuid)
+     case mPath of
+       Nothing -> return ()
+       Just path' -> when changed $ propertyChanged (valProp $ WOP path' c) v
      return changed
   where
     runEff :: MethodHandlerT IO x -> BluetoothM x
@@ -95,7 +100,6 @@ writeChrc c v = case (c ^. value . writeValue, c ^. value . notifying) of
       case res of
         Left e -> throwError $ MethodErrorMessage $ errorBody e
         Right val -> return val
-
 
 -- * Constants
 
