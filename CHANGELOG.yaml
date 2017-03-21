@@ -2,6 +2,22 @@ upcoming:
 
 releases:
 
+  - version: "0.3.0.0"
+    changes:
+
+      - description: Export runHandler
+        notes: Sometimes needed for testing
+        authors: jkarni
+        date: 2017-03-20
+
+      - description: Notifications
+        notes: |
+            This is a backwards incompatible change that fixes notifications.
+            'writeChrc' has been removed, and 'triggerNotifications' added. The
+            lower bound on d-bus is now 0.1.5.
+        authors: jkarni
+        date: 2017-03-20
+
   - version: "0.2.0.0"
     changes:
 
