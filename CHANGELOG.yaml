@@ -2,6 +2,14 @@ upcoming:
 
 releases:
 
+  - version: "0.3.1.0"
+    changes:
+
+      - description: Remove claimed 7.8 compatibility
+        notes: Thanks hvr!
+        authors: jkarni
+        date: 2017-03-21
+
   - version: "0.3.0.0"
     changes:
 
