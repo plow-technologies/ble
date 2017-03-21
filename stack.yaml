@@ -3,6 +3,6 @@ extra-package-dbs: []
 packages:
 - '.'
 extra-deps:
-- d-bus-0.1.5
+- d-bus-0.1.6
 - xml-picklers-0.3.6
 resolver: lts-7.13

@@ -1,38 +1,40 @@
 module Bluetooth.Internal.DBus where
 
-import Control.Monad.Error.Class (throwError)
+import Control.Monad.Except
 import Control.Monad.Reader
-import Data.IORef                (readIORef)
-import Data.Monoid               ((<>))
+import Data.IORef           (readIORef, writeIORef)
+import Data.Monoid          ((<>))
 import DBus
-import DBus.Signal               (execSignalT)
+import DBus.Signal          (execSignalT)
 import Lens.Micro
 
-import qualified Data.Map       as Map
-import qualified Data.Serialize as S
-import qualified Data.Text      as T
+import qualified Data.Map        as Map
+import qualified Data.Text       as T
 
 import Bluetooth.Internal.HasInterface
 import Bluetooth.Internal.Interfaces
 import Bluetooth.Internal.Types
 import Bluetooth.Internal.Utils
+import Bluetooth.Internal.Errors
 
 -- | Registers an application and advertises it. If you would like to have
 -- finer-grained control of the advertisement, use @registerApplication@ and
 -- @advertise@.
-registerAndAdvertiseApplication :: Application -> BluetoothM ()
+registerAndAdvertiseApplication :: Application -> BluetoothM ApplicationRegistered
 registerAndAdvertiseApplication app = do
-  registerApplication app
+  reg <- registerApplication app
   advertise (advertisementFor app)
+  return reg
 
 -- | Registers an application (set of services) with Bluez.
-registerApplication :: Application -> BluetoothM ()
+registerApplication :: Application -> BluetoothM ApplicationRegistered
 registerApplication app = do
   conn <- ask
   addAllObjs conn app
-  toBluetoothM . const
+  () <- toBluetoothM . const
     $ callMethod bluezName bluezPath (T.pack gattManagerIFace) "RegisterApplication"  args []
     $ dbusConn conn
+  return ApplicationRegistered
   where
     args :: (ObjectPath, Map.Map T.Text Any)
     args = (app ^. path, Map.empty)
@@ -47,11 +49,16 @@ addAllObjs conn app = do
     addObject conn p
       $  (WOP p s `withInterface` gattServiceIFaceP)
       <> (WOP p s `withInterface` propertiesIFaceP)
+    registerObjectPath (s ^. uuid) p
     forM_ (zip [0..] (s ^. characteristics)) $ \(i', c) -> do
       let p' = characteristicObjectPath p i'
       addObject conn p'
         $ (WOP p' c `withInterface` gattCharacteristicIFaceP)
        <> (WOP p' c `withInterface` propertiesIFaceP)
+      registerObjectPath (c ^. uuid) p'
+   where
+     registerObjectPath :: UUID -> ObjectPath -> IO ()
+     registerObjectPath uuid' op = writeIORef (objectPathOf uuid') (Just op)
 
 -- | Advertise a set of services.
 advertise :: WithObjectPath Advertisement -> BluetoothM ()
@@ -76,26 +83,29 @@ advertisementFor app = WOP p adv
     adv = def & serviceUUIDs .~ (app ^.. services . traversed . uuid)
     p = app ^. path & toText %~ (</> "adv")
 
--- | Write a characteristic (if possible). Returns True if characterstic was
--- successfully written.
-writeChrc :: S.Serialize x => WithObjectPath CharacteristicBS -> x -> BluetoothM Bool
-writeChrc c v = case (c ^. value . writeValue, c ^. value . notifying) of
-  (Nothing, _) -> return False
-  (Just f, Nothing) -> runEff . handlerToMethodHandler $ f (S.encode v)
-  (Just f, Just r)  -> runEff $ do
-     changed <- handlerToMethodHandler (f $ S.encode v)
-     notify <- liftIO $ readIORef r
-     when (changed && notify) $ propertyChanged (valProp c) (S.encode v)
-     return changed
+
+-- | Triggers notifications or indications.
+triggerNotification :: ApplicationRegistered -> CharacteristicBS -> BluetoothM ()
+triggerNotification ApplicationRegistered c = do
+   case c ^. readValue of
+     Nothing -> throwError "Handler does not have a readValue implementation!"
+     Just readHandler -> do
+       res' <- liftIO $ runHandler readHandler
+       res <- case res' of
+         Left e -> throwError $ BLEError e
+         Right v -> return v
+       mPath <- liftIO $ readIORef $ objectPathOf (c ^. uuid)
+       case mPath of
+         Nothing -> throwError "UUID not found - are you sure you registered the application containing it?"
+         Just path' -> runEff $ propertyChanged (valProp $ WOP path' c) res
   where
     runEff :: MethodHandlerT IO x -> BluetoothM x
     runEff act = do
       conn <- asks dbusConn
       res <- liftIO $ execSignalT act conn
       case res of
-        Left e -> throwError $ MethodErrorMessage $ errorBody e
+        Left e -> throwError . DBusError . MethodErrorMessage $ errorBody e
         Right val -> return val
-
 
 -- * Constants
 

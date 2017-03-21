@@ -51,13 +51,13 @@ module Bluetooth
   , advertisementFor
   , connect
   , runBluetoothM
+  , runHandler
 
   -- * Field lenses
   , uuid
   , properties
   , readValue
   , writeValue
-  , notifying
   , characteristics
   , services
   , path
@@ -70,8 +70,9 @@ module Bluetooth
   , includeTxPower
   , connectionName
 
-  -- * Updating values with notification
-  , writeChrc
+  -- * Notifications
+  , characteristicIsNotifying
+  , triggerNotification
 
 
 

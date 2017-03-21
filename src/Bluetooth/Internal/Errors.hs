@@ -15,6 +15,9 @@ newtype Handler a
   = Handler { getReadValue :: ExceptT T.Text IO a }
   deriving (Functor, Applicative, Monad, MonadIO, Generic, MonadError T.Text)
 
+runHandler :: Handler a -> IO (Either T.Text a)
+runHandler = runExceptT . getReadValue
+
 -- | Generic failure
 errorFailed :: Handler a
 errorFailed = throwError "org.bluez.Error.Failed"

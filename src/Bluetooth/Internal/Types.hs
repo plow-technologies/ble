@@ -9,7 +9,9 @@
 module Bluetooth.Internal.Types where
 
 
-import Control.Monad.Except   (ExceptT (ExceptT), MonadError, runExceptT)
+import Control.Concurrent     (MVar, modifyMVar, newMVar)
+import Control.Monad.Except   (ExceptT (ExceptT), MonadError, runExceptT,
+                               withExceptT)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Reader   (MonadReader, ReaderT (ReaderT), runReaderT)
 import Data.Default.Class     (Default (def))
@@ -28,6 +30,7 @@ import DBus.Types             (dBusConnectionName, root)
 import GHC.Generics           (Generic)
 import Lens.Micro
 import Lens.Micro.TH          (makeFields)
+import System.IO.Unsafe       (unsafePerformIO)
 
 import qualified Data.ByteString as BS
 import qualified Data.Map        as Map
@@ -210,20 +213,53 @@ data Characteristic typ = Characteristic
   -- | Write a value. Note that the value is only writeable externally if the
   -- characteristic contains the CPWrite property *and* this is a Just.
   , characteristicWriteValue :: Maybe (typ -> Handler Bool)
-  -- | If @Nothing@, this characteristic does not send notifications.
-  -- If @Just False@, the characteristic does not currently send notifications, but
-  -- can be made to (with a @StartNotify@ method request).
-  -- If @Just True@, the characteristic currently sends notifications (and can
-  -- be made to stop with a @StopNotify@ method request).
-  -- **NOTE**: Notifications do not currently work.
-  , characteristicNotifying  :: Maybe (IORef Bool)
   } deriving (Generic)
 
 makeFields ''Characteristic
 
 
+-- This is essentialy the unsafePerformIO memoization trick
+characteristicIsNotifying :: UUID -> MVar Bool
+characteristicIsNotifying = unsafePerformIO $ do
+  cm <- newMVar $ Map.empty
+  return $ \uuid' -> unsafePerformIO $ do
+    modifyMVar cm $ \curMap -> case Map.lookup uuid' curMap of
+      Nothing -> do
+        e <- newMVar False
+        return (Map.insert uuid' e curMap, e)
+      Just v  -> return (curMap, v)
+{-# NOINLINE characteristicIsNotifying #-}
+
+-- This too is essentialy the unsafePerformIO memoization trick. Keeps track of
+-- object paths for registered services and characteristics so that we can
+-- expose an API that doesn't require WithObjectPath
+objectPathOf :: UUID -> IORef (Maybe ObjectPath)
+objectPathOf = unsafePerformIO $ do
+  cm <- newMVar $ Map.empty
+  return $ \uuid' -> unsafePerformIO $ do
+    modifyMVar cm $ \curMap -> case Map.lookup uuid' curMap of
+      Nothing -> do
+        e <- newIORef Nothing
+        return (Map.insert uuid' e curMap, e)
+      Just v  -> return (curMap, v)
+{-# NOINLINE objectPathOf #-}
+
+{-
+-- Like 'characteristicIsNotifying', but for cached values.
+characteristicValue :: UUID -> MVar BS.ByteString
+characteristicValue = unsafePerformIO $ do
+  cm <- newMVar $ Map.empty
+  return $ \uuid' -> unsafePerformIO $ do
+    modifyMVar cm $ \curMap -> case Map.lookup uuid' curMap of
+      Nothing -> do
+        e <- newMVar False
+        return (Map.insert uuid' e curMap, e)
+      Just v  -> return (curMap, v)
+{-# NOINLINE characteristicValue #-}
+-}
+
 instance IsString (Characteristic a) where
-  fromString x = Characteristic (fromString x) [] Nothing Nothing Nothing
+  fromString x = Characteristic (fromString x) [] Nothing Nothing
 
 -- Note [WithObjectPath]
 instance Representable (WithObjectPath (Characteristic a)) where
@@ -403,18 +439,38 @@ connect = do
 
 -- * BluetoothM
 
+data Error
+  = DBusError MethodError
+  | BLEError T.Text
+  deriving (Show, Generic)
+
+instance IsString Error where
+  fromString = BLEError . fromString
+
 newtype BluetoothM a
-  = BluetoothM ( ReaderT Connection (ExceptT MethodError IO) a )
-  deriving (Functor, Applicative, Monad, MonadIO, MonadError MethodError,
+  = BluetoothM ( ReaderT Connection (ExceptT Error IO) a )
+  deriving (Functor, Applicative, Monad, MonadIO, MonadError Error,
             MonadReader Connection)
 
-runBluetoothM :: BluetoothM a -> Connection -> IO (Either MethodError a)
+runBluetoothM :: BluetoothM a -> Connection -> IO (Either Error a)
 runBluetoothM (BluetoothM e) conn = runExceptT $ runReaderT e conn
 
 toBluetoothM :: (Connection -> IO (Either MethodError a)) -> BluetoothM a
-toBluetoothM = BluetoothM . ReaderT . fmap ExceptT
+toBluetoothM = BluetoothM . ReaderT . fmap (withExceptT DBusError . ExceptT)
 
 
+-- * Assorted
+
+-- | This datatype, which is kept opaque, is returned when an application is
+-- successfully registered, and required as an argument from functions that
+-- should only be called after the application has been registered.
+data ApplicationRegistered = ApplicationRegistered
+  deriving (Eq, Show, Read, Generic)
+
+data Status
+  = Success
+  | Failure
+  deriving (Eq, Show, Read, Ord, Enum, Generic)
 
 {- Note [WithObjectPath]
 ~~~~~~~~~~~~~~~~~~~~~~~~~
