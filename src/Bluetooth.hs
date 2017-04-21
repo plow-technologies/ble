@@ -82,6 +82,7 @@ module Bluetooth
   -- | Types representing components of a BLE application.
   , Connection
   , Application
+  , ApplicationRegistered
   , Service
   , UUID(UUID)
   , CharacteristicProperty(..)
