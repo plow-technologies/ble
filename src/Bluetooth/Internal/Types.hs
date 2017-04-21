@@ -464,8 +464,8 @@ toBluetoothM = BluetoothM . ReaderT . fmap (withExceptT DBusError . ExceptT)
 -- | This datatype, which is kept opaque, is returned when an application is
 -- successfully registered, and required as an argument from functions that
 -- should only be called after the application has been registered.
-data ApplicationRegistered = ApplicationRegistered
-  deriving (Eq, Show, Read, Generic)
+newtype ApplicationRegistered = ApplicationRegistered ObjectPath
+  deriving (Eq, Show, Generic)
 
 data Status
   = Success

@@ -47,8 +47,10 @@ module Bluetooth
   (
     registerApplication
   , registerAndAdvertiseApplication
+  , unregisterApplication
   , advertise
   , advertisementFor
+  , unadvertise
   , connect
   , runBluetoothM
   , runHandler

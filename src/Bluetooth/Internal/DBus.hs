@@ -32,12 +32,22 @@ registerApplication app = do
   conn <- ask
   addAllObjs conn app
   () <- toBluetoothM . const
-    $ callMethod bluezName bluezPath (T.pack gattManagerIFace) "RegisterApplication"  args []
+    $ callMethod bluezName bluezPath (T.pack gattManagerIFace)
+        "RegisterApplication" args []
     $ dbusConn conn
-  return ApplicationRegistered
+  return $ ApplicationRegistered (app ^. path)
   where
     args :: (ObjectPath, Map.Map T.Text Any)
     args = (app ^. path, Map.empty)
+
+unregisterApplication :: ApplicationRegistered -> BluetoothM ()
+unregisterApplication (ApplicationRegistered appPath) = do
+  conn <- ask
+  toBluetoothM . const
+    $ callMethod bluezName bluezPath (T.pack gattManagerIFace)
+        "UnregisterApplication" appPath []
+    $ dbusConn conn
+
 
 -- | Adds handlers for all the objects managed by the Application (plus the
 -- Application itself).
@@ -75,6 +85,18 @@ advertise adv = do
     args :: (ObjectPath, Map.Map T.Text Any)
     args = (adv ^. path, Map.empty)
 
+-- | Unregister an adverstisement.
+unadvertise :: WithObjectPath Advertisement -> BluetoothM ()
+unadvertise adv = do
+  conn <- ask
+  toBluetoothM . const $ do
+    callMethod bluezName bluezPath (T.pack leAdvertisingManagerIFace) "UnregisterAdvertisement" args []
+      $ dbusConn conn
+  where
+    args :: ObjectPath
+    args = adv ^. path
+
+
 -- | Create an advertisement for all of an application's services.
 -- The advertisement will be for peripheral (not broadcast) by default.
 advertisementFor :: Application -> WithObjectPath Advertisement
@@ -86,7 +108,7 @@ advertisementFor app = WOP p adv
 
 -- | Triggers notifications or indications.
 triggerNotification :: ApplicationRegistered -> CharacteristicBS -> BluetoothM ()
-triggerNotification ApplicationRegistered c = do
+triggerNotification (ApplicationRegistered _) c = do
    case c ^. readValue of
      Nothing -> throwError "Handler does not have a readValue implementation!"
      Just readHandler -> do
