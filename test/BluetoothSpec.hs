@@ -20,7 +20,9 @@ spec = do
   return ()
 #else
   registerApplicationSpec
+  unregisterApplicationSpec
   advertiseSpec
+  unadvertiseSpec
   {-notifySpec-}
 #endif
 
@@ -35,6 +37,16 @@ registerApplicationSpec = describe "registerApplication" $ before connect $ do
     Left err <- runBluetoothM (registerApplication testApp) conn
     show err `shouldContain` "Already Exists"
 
+unregisterApplicationSpec :: Spec
+unregisterApplicationSpec = describe "unregisterApplication" $ before connect $ do
+
+  it "unregisters the service" $ \conn -> do
+    Right p <- runBluetoothM (registerApplication testApp) conn
+    v1 <- runBluetoothM (unregisterApplication p) conn
+    v1 `shouldSatisfy` isRight
+    v2 <- runBluetoothM (registerApplication testApp) conn
+    v2 `shouldSatisfy` isRight
+
 advertiseSpec :: Spec
 advertiseSpec = describe "advertise" $ before connect $ do
 
@@ -44,6 +56,7 @@ advertiseSpec = describe "advertise" $ before connect $ do
         -- We verify that the advertisement was registered by checking that
         -- attempting to register it again throws an AlreadyExists error.
         Left err <- runBluetoothM (advertise ad) conn
+        _ <- runBluetoothM (unadvertise ad) conn
         show err `shouldContain` "Already Exists"
 
   it "adverstises a set of services" $ \conn -> checkAdvert testAdv conn
@@ -57,6 +70,19 @@ advertiseSpec = describe "advertise" $ before connect $ do
   it "works with manufacturer data" $ \conn -> do
     let adv = testAdv & value . manufacturerData . at 1 ?~ "hi"
     checkAdvert adv conn
+
+unadvertiseSpec :: Spec
+unadvertiseSpec = describe "unadvertise" $ before connect $ do
+
+  it "unregisters an advertisement" $ \conn -> do
+    v1 <- runBluetoothM (advertise testAdv) conn
+    v1 `shouldSatisfy` isRight
+    Left err <- runBluetoothM (advertise testAdv) conn
+    show err `shouldContain` "Already Exists"
+    v2 <- runBluetoothM (unadvertise testAdv) conn
+    v2 `shouldSatisfy` isRight
+    v3 <- runBluetoothM (advertise testAdv) conn
+    v3 `shouldSatisfy` isRight
 
 {-notifySpec :: Spec-}
 {-notifySpec = describe "notification" $ before connect $ do-}

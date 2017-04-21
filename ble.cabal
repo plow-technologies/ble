@@ -8,7 +8,7 @@ synopsis:       Bluetooth Low Energy (BLE) peripherals
 description:    This package provides a Haskell API for writing Bluetooth Low Energy peripherals.
 stability:      alpha
 homepage:       http://github.com/plow-technologies/ble#readme
-bug-reports:    https://github.com/plow-techonologies/ble/issues
+bug-reports:    https://github.com/plow-technologies/ble/issues
 author:         Julian K. Arni
 maintainer:     jkarni@turingjump.com
 copyright:      2016 Julian K. Arni
@@ -25,7 +25,7 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/plow-techonologies/ble
+  location: https://github.com/plow-technologies/ble
 
 flag bluez543
   description: Bluez version 5.43 or greater
