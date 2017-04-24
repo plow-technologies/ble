@@ -1,8 +1,12 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Bluetooth.TypesSpec (spec) where
 
+import Data.Maybe                (fromJust)
 import Data.Proxy                (Proxy (Proxy))
+import Data.Tuple                (swap)
+import Data.Void                 (Void)
 import DBus
+import Lens.Micro
 import Test.Hspec
 import Test.QuickCheck
 import Test.QuickCheck.Instances ()
@@ -10,6 +14,7 @@ import Test.QuickCheck.Instances ()
 import qualified Data.Text as T
 
 import Bluetooth.Internal.Types
+import Bluetooth.Internal.Lenses
 
 spec :: Spec
 spec = do
@@ -49,6 +54,12 @@ chrPropPairsSpec = describe "chrPropPairs" $ do
   it "contains all constructors of CharacteristicProperty" $ do
     all (`elem` (fst <$> chrPropPairs)) [minBound..maxBound] `shouldBe` True
 
+  it "is one-to-one" $ do
+    let there = [ fromJust $ lookup d chrPropPairs  | d <- fst <$> chrPropPairs ]
+    let back = [ fromJust $ lookup d (swap <$> chrPropPairs)   | d <- there ]
+    back `shouldBe` fst <$> chrPropPairs
+
+
 -- * Utils
 
 fromRepToRepInverse
@@ -65,18 +76,21 @@ instance Arbitrary UUID where
                      ,"FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF"
                      )
 
+instance Arbitrary a => Arbitrary (WithObjectPath a) where
+  arbitrary = WOP <$> arbitrary <*> arbitrary
+
 instance Arbitrary Application where
   arbitrary = Application <$> arbitrary <*> arbitrary
 
 instance Arbitrary ObjectPath where
   arbitrary = objectPath . T.pack <$> arbitrary
 
-instance Arbitrary Service where
+instance Arbitrary (Service 'Local) where
   arbitrary = Service <$> arbitrary <*> arbitrary
 
-instance (CoArbitrary a, Arbitrary a)
-  => Arbitrary (Characteristic a) where
-  arbitrary = Characteristic
+instance {-# OVERLAPPABLE #-} (CoArbitrary a, Arbitrary a)
+  => Arbitrary (Characteristic 'Local a) where
+  arbitrary = LocalChar
     <$> arbitrary
     <*> arbitrary
     <*> (fmap return <$> arbitrary)
@@ -84,3 +98,20 @@ instance (CoArbitrary a, Arbitrary a)
 
 instance Arbitrary CharacteristicProperty where
   arbitrary = elements [minBound..maxBound]
+
+instance Eq (Characteristic m Void) where
+  a == b
+    = a ^. uuid       == b ^. uuid
+   && a ^. properties == b ^. properties
+
+instance Show (Characteristic m Void) where
+  show a = "Characteristic { "
+        ++ "characteristicUuid = " ++ show (a ^. uuid) ++ ", "
+        ++ "characteristicProperties = " ++ show (a ^. properties) ++ " }"
+
+instance {-# OVERLAPPING #-} Arbitrary (Characteristic 'Local Void) where
+  arbitrary = LocalChar
+    <$> arbitrary
+    <*> arbitrary
+    <*> pure Nothing
+    <*> pure Nothing

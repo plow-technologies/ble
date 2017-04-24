@@ -30,12 +30,12 @@ app
   = "/com/turingjump/example/auth"
     & services .~ [auth]
 
-auth :: Service
+auth :: Service 'Local
 auth
   = "18b2e7ec-2706-429e-a021-ab5e8158477b"
     & characteristics .~ [secret]
 
-secret :: CharacteristicBS
+secret :: CharacteristicBS 'Local
 secret
   = "5bf24762-d9d1-445f-b81d-87069cc35e36"
     & readValue ?~ encodeRead (return ("Juke/19" :: String))

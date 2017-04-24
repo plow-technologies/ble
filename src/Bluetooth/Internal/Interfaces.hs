@@ -1,8 +1,12 @@
 module Bluetooth.Internal.Interfaces where
 
+import Data.IORef (IORef, newIORef)
 import Data.Proxy
 import DBus
 import GHC.TypeLits
+import System.IO.Unsafe (unsafePerformIO)
+
+import qualified Data.Text as T
 
 
 type ObjectManager = "org.freedesktop.DBus.ObjectManager"
@@ -14,7 +18,7 @@ objectManagerIFace :: String
 objectManagerIFace = symbolVal objectManagerIFaceP
 
 
-type Properties    = "org.freedesktop.DBus.Properties"
+type Properties = "org.freedesktop.DBus.Properties"
 
 propertiesIFaceP :: Proxy Properties
 propertiesIFaceP = Proxy
@@ -66,6 +70,14 @@ leAdvertisingManagerIFaceP = Proxy
 leAdvertisingManagerIFace :: String
 leAdvertisingManagerIFace = symbolVal leAdvertisingManagerIFaceP
 
+type Device1 = "org.bluez.Device1"
+
+deviceIFaceP :: Proxy Device1
+deviceIFaceP = Proxy
+
+deviceIFace :: String
+deviceIFace = symbolVal deviceIFaceP
+
 -- * Errors
 
 invalidArgs :: MsgError
@@ -81,3 +93,14 @@ notSupported = MsgError
   , errorText = Nothing
   , errorBody = []
   }
+
+-- * Constants (ish)
+-- We use IORefs here rather than have it be a constant because when mocking
+-- for tests we can't take up this name.
+bluezName :: IORef T.Text
+bluezName = unsafePerformIO $ newIORef "org.bluez"
+{-# NOINLINE bluezName #-}
+
+bluezPath :: IORef ObjectPath
+bluezPath = unsafePerformIO $ newIORef "/org/bluez/hci0"
+{-# NOINLINE bluezPath #-}

@@ -1,14 +1,23 @@
-sudo: false
+sudo: required
+dist: trusty
+language: python
+python:
+  - "3.4"
+
+virtualenv:
+  system_site_packages: true
 
 env:
-  - STACK_YAML=stack.yaml
-  - STACK_YAML=stack-7.10.yaml
-
-addons:
-  apt:
-    packages: libgmp-dev
+  global:
+    - PACKAGES="libgmp-dev libdbus-1-dev libdbus-glib-1-dev python3-dbus python3-gi python3-pip"
+  matrix:
+    - STACK_YAML=stack.yaml
+    - STACK_YAML=stack-7.10.yaml
 
 install:
+  # apt
+  - sudo apt-get update -q
+  - sudo apt-get install -y $PACKAGES
   # stack
   - mkdir -p ~/.local/bin
   - export PATH=~/.local/bin:$PATH
@@ -17,10 +26,11 @@ install:
 
 script:
   - stack setup --no-terminal
-  - stack build --ghc-options=-Werror --no-terminal --flag ble:-hasBluez
-  - stack test --ghc-options=-Werror --no-terminal  --flag ble:-hasBluez
+  - stack build --ghc-options=-Werror --no-terminal --flag ble:-hasBluez --flag ble:-hasDBus
+  - stack test --ghc-options=-Werror --no-terminal  --flag ble:-hasBluez --flag ble:-hasDBus
   - cmp README.md examples/README.lhs
 
 cache:
   directories:
     - $HOME/.stack
+    - $HOME/.pip

@@ -44,6 +44,7 @@
 -- >   threadDelay maxBound
 module Bluetooth
   (
+  -- * Writing peripherals/servers
     registerApplication
   , registerAndAdvertiseApplication
   , unregisterApplication
@@ -53,6 +54,30 @@ module Bluetooth
   , connect
   , runBluetoothM
   , runHandler
+
+  -- ** Notifications
+  , characteristicIsNotifying
+  , triggerNotification
+
+  -- * Writing centrals/clients
+  , getAllServices
+  , getService
+
+  -- ** Notifications
+  , startNotify
+  , stopNotify
+
+  -- * Devices
+  , getAllDevices
+  , connectTo
+  , disconnectFrom
+  , isConnected
+  , pairWith
+  , isPaired
+  , trust
+  , distrust
+  , isTrusted
+  , getDeviceServiceUUIDs
 
   -- * Field lenses
   , uuid
@@ -71,9 +96,6 @@ module Bluetooth
   , includeTxPower
   , connectionName
 
-  -- * Notifications
-  , characteristicIsNotifying
-  , triggerNotification
 
 
 
@@ -89,6 +111,8 @@ module Bluetooth
   , CharacteristicBS
   , Advertisement(..)
   , WithObjectPath
+  , Location(..)
+  , Device(..)
 
 
   -- * Encoding and decoding
@@ -113,11 +137,12 @@ module Bluetooth
   , module Lens.Micro.GHC
   ) where
 
-import Bluetooth.Internal.DBus as X
-import Bluetooth.Internal.Types as X
+import Bluetooth.Internal.DBus      as X
+import Bluetooth.Internal.Device    as X
+import Bluetooth.Internal.Errors    as X
+import Bluetooth.Internal.Lenses    as X
 import Bluetooth.Internal.Serialize as X
-import Bluetooth.Internal.Errors as X
-import Bluetooth.Internal.Lenses as X
+import Bluetooth.Internal.Types     as X
 
 import Lens.Micro
 import Lens.Micro.GHC
