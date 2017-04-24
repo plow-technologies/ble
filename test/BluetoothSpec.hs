@@ -24,7 +24,7 @@ spec = do
   advertiseSpec
   unadvertiseSpec
   {-notifySpec-}
-  getServiceSpec
+  {-getServiceSpec-}
 #endif
 
 registerApplicationSpec :: Spec
@@ -102,18 +102,21 @@ unadvertiseSpec = describe "unadvertise" $ before connect $ do
     {-_ <- runBluetoothM (testCharacteristic ^. stopNotify) conn-}
     {-readIORef isNotifying `shouldReturn` False-}
 
-getServiceSpec :: Spec
-getServiceSpec = describe "getService" $ before connect $ do
+{-getServiceSpec :: Spec-}
+{-getServiceSpec = describe "getService" $ before connect $ do-}
 
-  it "retrieves services by UUID" $ \conn -> do
-    v <- runBluetoothM (registerApplication testApp) conn
-    h <- flip runBluetoothM conn $ do
-          Right service <- getService (testService ^. uuid)
-          Just res <- service ^. at (testCharacteristic ^. uuid) . readValue
-          return res
-    runHandler h `shouldReturn` "response"
+  {-it "retrieves services by UUID" $ \conn -> do-}
+    {-v <- runBluetoothM (registerApplication testApp) conn-}
+    {-h <- flip runBluetoothM conn $ do-}
+          {-Right (Just service) <- getService (testService ^. uuid)-}
+          {-Just res <- service ^. at (testCharacteristic ^. uuid) . readValue-}
+          {-return res-}
+    {-runHandler h `shouldReturn` "response"-}
 
-  it "fails if the application does not exist" \conn -> $ pending
+  {-it "fails if the application does not exist" \conn -> $ pending-}
+    {-let unknownUUID = "da92ce4a-2a0f-4c5d-ac68-9d3b01886976"-}
+    {-h <- runBluetoothM (getService unknownUUID) conn-}
+    {-runHandler h `shouldReturn` Nothing-}
 
 -- * Test service
 

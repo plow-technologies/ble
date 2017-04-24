@@ -2,6 +2,7 @@
 module Bluetooth.TypesSpec (spec) where
 
 import Data.Proxy                (Proxy (Proxy))
+import Data.Void                 (Void)
 import DBus
 import Test.Hspec
 import Test.QuickCheck
@@ -16,6 +17,7 @@ spec = do
   uuidSpec
   parentPathSpec
   chrPropPairsSpec
+  charFromRepSpec
 
 uuidSpec :: Spec
 uuidSpec = describe "UUID" $ do
@@ -49,6 +51,13 @@ chrPropPairsSpec = describe "chrPropPairs" $ do
   it "contains all constructors of CharacteristicProperty" $ do
     all (`elem` (fst <$> chrPropPairs)) [minBound..maxBound] `shouldBe` True
 
+charFromRepSpec :: Spec
+charFromRepSpec = describe "charFromRep" $ do
+
+  it "is a left inverse of toRep, modulo handlers" $ property
+    $ \(char :: Characteristic Void) ->
+      charFromRep (toRep char) `shouldBe` Just char
+
 -- * Utils
 
 fromRepToRepInverse
@@ -65,6 +74,9 @@ instance Arbitrary UUID where
                      ,"FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF"
                      )
 
+instance Arbitrary a => Arbitrary (WithObjectPath a) where
+  arbitrary = WOP <$> arbitrary <*> arbitrary
+
 instance Arbitrary Application where
   arbitrary = Application <$> arbitrary <*> arbitrary
 
@@ -74,7 +86,7 @@ instance Arbitrary ObjectPath where
 instance Arbitrary Service where
   arbitrary = Service <$> arbitrary <*> arbitrary
 
-instance (CoArbitrary a, Arbitrary a)
+instance {-# OVERLAPPABLE #-} (CoArbitrary a, Arbitrary a)
   => Arbitrary (Characteristic a) where
   arbitrary = Characteristic
     <$> arbitrary
@@ -84,3 +96,19 @@ instance (CoArbitrary a, Arbitrary a)
 
 instance Arbitrary CharacteristicProperty where
   arbitrary = elements [minBound..maxBound]
+
+instance Eq (Characteristic Void) where
+  a == b = a ^. uuid == b ^. uuid && a ^. properties == b ^. properties
+
+instance Show (Characteristic Void) where
+  show a = "Characteristic { "
+        ++ "characteristicUuid = " ++ show (a ^. uuid) ++ ", "
+        ++ "characteristicProperties = " ++ show (a ^. uuid) ++ " }"
+
+instance {-# OVERLAPPING #-} Arbitrary (Characteristic Void) where
+  arbitrary = Characteristic
+    <$> arbitrary
+    <*> arbitrary
+    <*> pure Nothing
+    <*> pure Nothing
+

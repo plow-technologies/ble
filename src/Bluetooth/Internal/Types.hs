@@ -32,6 +32,7 @@ import GHC.Generics           (Generic)
 import Lens.Micro
 import Lens.Micro.TH          (makeFields)
 import System.IO.Unsafe       (unsafePerformIO)
+import Unsafe.Coerce          (unsafeCoerce)
 
 import qualified Data.ByteString as BS
 import qualified Data.Map        as Map
@@ -273,7 +274,18 @@ instance Representable (WithObjectPath (Characteristic a)) where
                           , ("Service", MkAny $ (char ^. path) & toText %~ parentPath)
                           , ("Flags", MkAny $ char ^. value . properties)
                           ]
-  fromRep _ = error "not implemented"
+  fromRep = error "not implemented"
+
+charFromRep :: (RepType (Characteristic a) ~ AnyDBusDict)
+  => DBusValue (RepType (Characteristic a)) -> Maybe (Characteristic a)
+charFromRep dict' = do
+  dict :: Map.Map T.Text Any <- fromRep dict'
+  let unmakeAny :: Any -> a
+      unmakeAny (MkAny x) = unsafeCoerce x
+  uuid' :: UUID <- unmakeAny <$> Map.lookup "UUID" dict
+  properties' <- unmakeAny <$> Map.lookup "Flags" dict
+  let char = Characteristic uuid' properties' Nothing Nothing
+  return char
 
 characteristicObjectPath :: ObjectPath -> Int -> ObjectPath
 characteristicObjectPath appOPath idx = appOPath & toText %~ addSuffix
@@ -461,6 +473,7 @@ connect = do
 data Error
   = DBusError MethodError
   | BLEError T.Text
+  | OtherError T.Text
   deriving (Show, Generic)
 
 instance IsString Error where
