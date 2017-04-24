@@ -247,20 +247,6 @@ objectPathOf = unsafePerformIO $ do
       Just v  -> return (curMap, v)
 {-# NOINLINE objectPathOf #-}
 
-{-
--- Like 'characteristicIsNotifying', but for cached values.
-characteristicValue :: UUID -> MVar BS.ByteString
-characteristicValue = unsafePerformIO $ do
-  cm <- newMVar $ Map.empty
-  return $ \uuid' -> unsafePerformIO $ do
-    modifyMVar cm $ \curMap -> case Map.lookup uuid' curMap of
-      Nothing -> do
-        e <- newMVar False
-        return (Map.insert uuid' e curMap, e)
-      Just v  -> return (curMap, v)
-{-# NOINLINE characteristicValue #-}
--}
-
 instance IsString (Characteristic a) where
   fromString x = Characteristic (fromString x) [] Nothing Nothing
 
@@ -276,8 +262,7 @@ instance Representable (WithObjectPath (Characteristic a)) where
                           ]
   fromRep = error "not implemented"
 
-charFromRep :: (RepType (Characteristic a) ~ AnyDBusDict)
-  => DBusValue (RepType (Characteristic a)) -> Maybe (Characteristic a)
+charFromRep :: DBusValue AnyDBusDict -> Maybe (Characteristic a)
 charFromRep dict' = do
   dict :: Map.Map T.Text Any <- fromRep dict'
   let unmakeAny :: Any -> a

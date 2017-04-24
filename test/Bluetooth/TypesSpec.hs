@@ -4,6 +4,7 @@ module Bluetooth.TypesSpec (spec) where
 import Data.Proxy                (Proxy (Proxy))
 import Data.Void                 (Void)
 import DBus
+import Lens.Micro
 import Test.Hspec
 import Test.QuickCheck
 import Test.QuickCheck.Instances ()
@@ -55,8 +56,8 @@ charFromRepSpec :: Spec
 charFromRepSpec = describe "charFromRep" $ do
 
   it "is a left inverse of toRep, modulo handlers" $ property
-    $ \(char :: Characteristic Void) ->
-      charFromRep (toRep char) `shouldBe` Just char
+    $ \(char :: Characteristic Void) objpath ->
+      charFromRep (toRep (WOP objpath char)) `shouldBe` Just char
 
 -- * Utils
 
@@ -103,7 +104,7 @@ instance Eq (Characteristic Void) where
 instance Show (Characteristic Void) where
   show a = "Characteristic { "
         ++ "characteristicUuid = " ++ show (a ^. uuid) ++ ", "
-        ++ "characteristicProperties = " ++ show (a ^. uuid) ++ " }"
+        ++ "characteristicProperties = " ++ show (a ^. properties) ++ " }"
 
 instance {-# OVERLAPPING #-} Arbitrary (Characteristic Void) where
   arbitrary = Characteristic
@@ -111,4 +112,3 @@ instance {-# OVERLAPPING #-} Arbitrary (Characteristic Void) where
     <*> arbitrary
     <*> pure Nothing
     <*> pure Nothing
-
