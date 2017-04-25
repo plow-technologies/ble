@@ -27,6 +27,7 @@ import DBus                   (ConnectionType (System), DBusConnection,
                                Representable (..), connectBus, objectPath,
                                objectRoot)
 import DBus.Types             (dBusConnectionName, root)
+import GHC.Exts               (IsList (..))
 import GHC.Generics           (Generic)
 import Lens.Micro
 import Lens.Micro.TH          (makeFields)
@@ -372,6 +373,11 @@ instance Representable AdvertisementType where
     Peripheral -> toRep ("peripheral" :: T.Text)
   fromRep _ = error "not implemented"
 
+-- | An advertisement can be generated automatically with @advertisementFor@,
+-- or with the @IsList@ instance. Both of these by default assume the
+-- advertisement is for a peripheral.
+--
+-- You can also, of course, use the constructor.
 data Advertisement = Advertisement
   { advertisementType_            :: AdvertisementType
   , advertisementServiceUUIDs     :: [UUID]
@@ -379,9 +385,21 @@ data Advertisement = Advertisement
   , advertisementManufacturerData :: Map.Map Word16 BS.ByteString
   , advertisementServiceData      :: Map.Map UUID BS.ByteString
   , advertisementIncludeTxPower   :: Bool
-  } deriving (Generic)
+  } deriving (Eq, Show, Generic)
 
 makeFields ''Advertisement
+
+instance IsList Advertisement where
+  type Item Advertisement = UUID
+  fromList services' = Advertisement
+    { advertisementType_            = Peripheral
+    , advertisementServiceUUIDs     = services'
+    , advertisementSolicitUUIDs     = []
+    , advertisementManufacturerData = mempty
+    , advertisementServiceData      = mempty
+    , advertisementIncludeTxPower   = False
+    }
+  toList adv = adv ^. serviceUUIDs
 
 instance Representable Advertisement where
   type RepType Advertisement = 'TypeDict 'TypeString 'TypeVariant

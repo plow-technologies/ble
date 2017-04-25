@@ -88,7 +88,7 @@ module Bluetooth
   , CharacteristicProperty(..)
   , Characteristic
   , CharacteristicBS
-  , Advertisement
+  , Advertisement(..)
   , WithObjectPath
 
 
