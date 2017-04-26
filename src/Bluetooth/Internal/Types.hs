@@ -44,7 +44,6 @@ import Bluetooth.Internal.Interfaces
 import Bluetooth.Internal.Utils
 import Bluetooth.Internal.Lenses
 
-import Debug.Trace
 
 -- | Append two Texts, keeping exactly one slash between them.
 (</>) :: T.Text -> T.Text -> T.Text
@@ -255,7 +254,7 @@ instance Representable (WithObjectPath (Characteristic a)) where
   toRep char = toRep tmap
     where
       tmap :: Map.Map T.Text Any
-      tmap = Map.fromList [ ("UUID", MkAny $ traceShowId $ char ^. value . uuid)
+      tmap = Map.fromList [ ("UUID", MkAny $ char ^. value . uuid)
                           , ("Service", MkAny $ (char ^. path) & toText %~ parentPath)
                           , ("Flags", MkAny $ char ^. value . properties)
                           ]
@@ -264,18 +263,13 @@ instance Representable (WithObjectPath (Characteristic a)) where
 charFromRep :: DBusValue AnyDBusDict -> Maybe (Characteristic a)
 charFromRep dict' = do
   dict :: Map.Map T.Text (DBusValue 'TypeVariant) <- fromRep dict'
-  traceShowM $ Map.keys dict
+  let unmakeAny :: (Representable a) => DBusValue 'TypeVariant -> Maybe a
+      unmakeAny x = fromRep =<< fromVariant x
   uuid' :: UUID <- unmakeAny =<< Map.lookup "UUID" dict
-  traceShowM uuid'
   properties' <- unmakeAny =<< Map.lookup "Flags" dict
   let char = Characteristic uuid' properties' Nothing Nothing
   return char
 
--- This is completely unsafe - an unchecked version of 'fromDyn'. Only use it
--- if you are sure that the type went through an Any, and what the result type
--- is.
-unmakeAny :: (Representable a) => DBusValue 'TypeVariant -> Maybe a
-unmakeAny x = fromRep =<< fromVariant x
 
 characteristicObjectPath :: ObjectPath -> Int -> ObjectPath
 characteristicObjectPath appOPath idx = appOPath & toText %~ addSuffix

@@ -140,45 +140,49 @@ triggerNotification (ApplicationRegistered _) c = do
     {-(x:_) -> Just x-}
 
 {--- | Get all registered services.-}
-{-getAllServices :: BluetoothM [Service]-}
-{-getAllServices = do-}
-  {-conn <- ask-}
-  {-objects <- toBluetoothM . const $-}
-    {-callMethod bluezName "/" (T.pack objectManagerIFace)-}
-       {-"GetManagedObjects" () [] $ dbusConn conn-}
+getAllServices :: BluetoothM [Service]
+getAllServices = do
+  conn <- ask
+  objects :: [(ObjectPath, [(T.Text, DBusValue 'TypeVariant)])] <- toBluetoothM . const $
+    callMethod bluezName "/" (T.pack objectManagerIFace)
+       "GetManagedObjects" () [] $ dbusConn conn
 
-  {--- We need to construct services manually, since we get the characteristics-}
-  {--- separately.-}
-  {-let characteristics =-}
-       {-[ objPath-}
-       {-| (objPath, ifaces) <- objects-}
-       {-, gattCharacteristicIFace `elem` (fst <$> ifaces)-}
-       {-]-}
-  {-let services =-}
-       {-[ objPath-}
-       {-| (objPath, ifaces) <- objects-}
-       {-, gattServiceIFace `elem` (fst <$> ifaces)-}
-       {-]-}
-  {-return []-}
-  {-where-}
-    {-mkChar :: ObjectPath -> BluetoothM CharacteristicBS-}
-    {-mkChar charPath = do-}
+  -- We need to construct services manually, since we get the characteristics
+  -- separately.
+  let chars =
+       [ objPath
+       | (objPath, ifaces) <- objects
+       , T.pack gattCharacteristicIFace `elem` (fst <$> ifaces)
+       ]
+  let servs =
+       [ objPath
+       | (objPath, ifaces) <- objects
+       , T.pack gattServiceIFace `elem` (fst <$> ifaces)
+       ]
+  forM servs $ \s -> mkService s [ c | c <- chars , s  `isPathPrefix` c ]
+  where
+    mkChar :: ObjectPath -> BluetoothM CharacteristicBS
+    mkChar charPath = do
+      conn <- ask
+      charProps <- toBluetoothM . const $
+        callMethod bluezName charPath (T.pack gattCharacteristicIFace)
+          "GetAll" () [] $ dbusConn conn
+      case charFromRep charProps of
+        Nothing -> throwError $ OtherError
+          "Bluez returned invalid characteristic"
+        Just c -> return c
 
-      {-toBluetoothM . const $-}
-        {-callMethod bluezName charPath (T.pack gattCharacteristicIFace)-}
-          {-"GetAll" () [] $ dbusConn conn-}
-
-    {-mkService :: ObjectPath -> [ObjectPath] -> BluetoothM Service-}
-    {-mkService servicePath charPaths = do-}
-
-      {-serviceProps <- toBluetoothM . const $-}
-        {-callMethod bluezName servicePath (T.pack gattServiceIFace)-}
-          {-"GetAll" () [] $ dbusConn conn-}
-
-      {-serv <- case Map.lookup "UUID" serviceProps of-}
-        {-Nothing -> throwError $ OtherError-}
-          {-"Bluez did not return a UUID for service"-}
-        {-Just u -> return $ Service u []-}
+    mkService :: ObjectPath -> [ObjectPath] -> BluetoothM Service
+    mkService servicePath charPaths = do
+      conn <- ask
+      serviceProps :: Map.Map T.Text UUID <- toBluetoothM . const $
+        callMethod bluezName servicePath (T.pack gattServiceIFace)
+          "GetAll" () [] $ dbusConn conn
+      chars <- mapM mkChar charPaths
+      case Map.lookup "UUID" serviceProps of
+        Nothing -> throwError $ OtherError
+          "Bluez did not return a UUID for service"
+        Just u -> return $ Service u chars
 
 
   {-let processService servicePath = toBluetoothM . const $ do-}
