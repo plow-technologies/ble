@@ -1,8 +1,9 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Bluetooth.TypesSpec (spec) where
 
-import Data.Int                  (Int16)
+import Data.Maybe                (fromJust)
 import Data.Proxy                (Proxy (Proxy))
+import Data.Tuple                (swap)
 import Data.Void                 (Void)
 import DBus
 import Lens.Micro
@@ -20,7 +21,6 @@ spec = do
   parentPathSpec
   chrPropPairsSpec
   charFromRepSpec
-  unmakeAnySpec
 
 uuidSpec :: Spec
 uuidSpec = describe "UUID" $ do
@@ -54,6 +54,12 @@ chrPropPairsSpec = describe "chrPropPairs" $ do
   it "contains all constructors of CharacteristicProperty" $ do
     all (`elem` (fst <$> chrPropPairs)) [minBound..maxBound] `shouldBe` True
 
+  it "is one-to-one" $ do
+    let there = [ fromJust $ lookup d chrPropPairs  | d <- fst <$> chrPropPairs ]
+    let back = [ fromJust $ lookup d (swap <$> chrPropPairs)   | d <- there ]
+    back `shouldBe` fst <$> chrPropPairs
+
+
 charFromRepSpec :: Spec
 charFromRepSpec = describe "charFromRep" $ do
 
@@ -61,17 +67,6 @@ charFromRepSpec = describe "charFromRep" $ do
     $ \(char :: Characteristic Void) objpath ->
       charFromRep (toRep (WOP objpath char)) `shouldBe` Just char
 
-unmakeAnySpec :: Spec
-unmakeAnySpec = describe "unmakeAny" $ do
-
-  it "is the left inverse of MkAny" $ property $ \(a :: Int16)
-                                                  (b :: Double)
-                                                  (c :: T.Text)
-                                                  (d :: UUID) -> do
-    unmakeAny (MkAny a) `shouldBe` a
-    unmakeAny (MkAny b) `shouldBe` b
-    unmakeAny (MkAny c) `shouldBe` c
-    unmakeAny (MkAny d) `shouldBe` d
 
 -- * Utils
 

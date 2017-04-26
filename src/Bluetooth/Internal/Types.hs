@@ -24,15 +24,14 @@ import DBus                   (ConnectionType (System), DBusConnection,
                                DBusSimpleType (..),
                                DBusType (DBusSimpleType, TypeDict, TypeVariant),
                                DBusValue (..), MethodError, Object, ObjectPath,
-                               Representable (..), connectBus, objectPath,
-                               objectRoot)
+                               Representable (..), connectBus, fromVariant,
+                               objectPath, objectRoot)
 import DBus.Types             (dBusConnectionName, root)
 import GHC.Exts               (IsList (..))
 import GHC.Generics           (Generic)
 import Lens.Micro
 import Lens.Micro.TH          (makeFields)
 import System.IO.Unsafe       (unsafePerformIO)
-import Unsafe.Coerce          (unsafeCoerce)
 
 import qualified Data.ByteString as BS
 import qualified Data.Map        as Map
@@ -117,7 +116,7 @@ data Any where
 instance Representable Any where
   type RepType Any = 'TypeVariant
   toRep (MkAny x) = DBVVariant (toRep x)
-  fromRep (DBVVariant x) = Just (MkAny x)
+  fromRep = error "not implemented" -- (DBVVariant x) = Just (MkAny x)
 
 -- Note [WithObjectPath]
 data WithObjectPath a = WOP
@@ -164,7 +163,6 @@ data CharacteristicProperty
   | CPAuthenticatedSignedWrites
   | CPNotify
   | CPIndicate
-  | CPSignedWriteCommand
   deriving (Eq, Show, Read, Enum, Bounded, Ord, Generic)
 
 instance Representable CharacteristicProperty where
@@ -189,7 +187,6 @@ chrPropPairs =
   , (CPAuthenticatedSignedWrites, "authenticated-signed-writes")
   , (CPNotify, "notify")
   , (CPIndicate, "indicate")
-  , (CPSignedWriteCommand, "authenticated-signed-writes")
   ]
 
 data CharacteristicOptions = CharacteristicOptions
@@ -266,18 +263,19 @@ instance Representable (WithObjectPath (Characteristic a)) where
 
 charFromRep :: DBusValue AnyDBusDict -> Maybe (Characteristic a)
 charFromRep dict' = do
-  dict :: Map.Map T.Text Any <- fromRep dict'
+  dict :: Map.Map T.Text (DBusValue 'TypeVariant) <- fromRep dict'
   traceShowM $ Map.keys dict
-  uuid' :: UUID <- unmakeAny <$> Map.lookup "UUID" dict
+  uuid' :: UUID <- unmakeAny =<< Map.lookup "UUID" dict
   traceShowM uuid'
-  properties' <- unmakeAny <$> Map.lookup "Flags" dict
+  properties' <- unmakeAny =<< Map.lookup "Flags" dict
   let char = Characteristic uuid' properties' Nothing Nothing
   return char
 
 -- This is completely unsafe - an unchecked version of 'fromDyn'. Only use it
--- if you're sure you know the type that went into the 'Any'.
-unmakeAny :: Any -> a
-unmakeAny (MkAny x) = unsafeCoerce x
+-- if you are sure that the type went through an Any, and what the result type
+-- is.
+unmakeAny :: (Representable a) => DBusValue 'TypeVariant -> Maybe a
+unmakeAny x = fromRep =<< fromVariant x
 
 characteristicObjectPath :: ObjectPath -> Int -> ObjectPath
 characteristicObjectPath appOPath idx = appOPath & toText %~ addSuffix
