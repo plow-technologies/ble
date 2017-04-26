@@ -1,5 +1,10 @@
 upcoming:
 
+  - description: Remove Bluetooth.Internal.Descriptors module
+    notes: The module was empty.
+    authors: jkarni
+    date: 2017-04-26
+
 releases:
 
   - version: "0.3.3.0"
@@ -7,7 +12,7 @@ releases:
 
       - description: Export 'Advertisement' constructor and make it 'IsList' instance.
         authors: jkarni
-        date: 2017-04-21
+        date: 2017-04-25
 
   - version: "0.3.2.1"
     changes:

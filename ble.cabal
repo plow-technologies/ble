@@ -62,7 +62,6 @@ library
   exposed-modules:
       Bluetooth
       Bluetooth.Internal.DBus
-      Bluetooth.Internal.Descriptors
       Bluetooth.Internal.Errors
       Bluetooth.Internal.HasInterface
       Bluetooth.Internal.Interfaces
