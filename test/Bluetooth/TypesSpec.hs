@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Bluetooth.TypesSpec (spec) where
 
+import Data.Int                  (Int16)
 import Data.Proxy                (Proxy (Proxy))
 import Data.Void                 (Void)
 import DBus
@@ -19,6 +20,7 @@ spec = do
   parentPathSpec
   chrPropPairsSpec
   charFromRepSpec
+  unmakeAnySpec
 
 uuidSpec :: Spec
 uuidSpec = describe "UUID" $ do
@@ -58,6 +60,18 @@ charFromRepSpec = describe "charFromRep" $ do
   it "is a left inverse of toRep, modulo handlers" $ property
     $ \(char :: Characteristic Void) objpath ->
       charFromRep (toRep (WOP objpath char)) `shouldBe` Just char
+
+unmakeAnySpec :: Spec
+unmakeAnySpec = describe "unmakeAny" $ do
+
+  it "is the left inverse of MkAny" $ property $ \(a :: Int16)
+                                                  (b :: Double)
+                                                  (c :: T.Text)
+                                                  (d :: UUID) -> do
+    unmakeAny (MkAny a) `shouldBe` a
+    unmakeAny (MkAny b) `shouldBe` b
+    unmakeAny (MkAny c) `shouldBe` c
+    unmakeAny (MkAny d) `shouldBe` d
 
 -- * Utils
 
@@ -99,7 +113,9 @@ instance Arbitrary CharacteristicProperty where
   arbitrary = elements [minBound..maxBound]
 
 instance Eq (Characteristic Void) where
-  a == b = a ^. uuid == b ^. uuid && a ^. properties == b ^. properties
+  a == b
+    = a ^. uuid       == b ^. uuid
+   && a ^. properties == b ^. properties
 
 instance Show (Characteristic Void) where
   show a = "Characteristic { "

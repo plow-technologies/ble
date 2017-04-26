@@ -45,6 +45,8 @@ import Bluetooth.Internal.Interfaces
 import Bluetooth.Internal.Utils
 import Bluetooth.Internal.Lenses
 
+import Debug.Trace
+
 -- | Append two Texts, keeping exactly one slash between them.
 (</>) :: T.Text -> T.Text -> T.Text
 a </> b
@@ -256,7 +258,7 @@ instance Representable (WithObjectPath (Characteristic a)) where
   toRep char = toRep tmap
     where
       tmap :: Map.Map T.Text Any
-      tmap = Map.fromList [ ("UUID", MkAny $ char ^. value . uuid)
+      tmap = Map.fromList [ ("UUID", MkAny $ traceShowId $ char ^. value . uuid)
                           , ("Service", MkAny $ (char ^. path) & toText %~ parentPath)
                           , ("Flags", MkAny $ char ^. value . properties)
                           ]
@@ -265,12 +267,17 @@ instance Representable (WithObjectPath (Characteristic a)) where
 charFromRep :: DBusValue AnyDBusDict -> Maybe (Characteristic a)
 charFromRep dict' = do
   dict :: Map.Map T.Text Any <- fromRep dict'
-  let unmakeAny :: Any -> a
-      unmakeAny (MkAny x) = unsafeCoerce x
+  traceShowM $ Map.keys dict
   uuid' :: UUID <- unmakeAny <$> Map.lookup "UUID" dict
+  traceShowM uuid'
   properties' <- unmakeAny <$> Map.lookup "Flags" dict
   let char = Characteristic uuid' properties' Nothing Nothing
   return char
+
+-- This is completely unsafe - an unchecked version of 'fromDyn'. Only use it
+-- if you're sure you know the type that went into the 'Any'.
+unmakeAny :: Any -> a
+unmakeAny (MkAny x) = unsafeCoerce x
 
 characteristicObjectPath :: ObjectPath -> Int -> ObjectPath
 characteristicObjectPath appOPath idx = appOPath & toText %~ addSuffix
