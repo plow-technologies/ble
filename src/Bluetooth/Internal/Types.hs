@@ -127,13 +127,6 @@ makeFields ''WithObjectPath
 
 type AnyDBusDict = 'TypeDict 'TypeString 'TypeVariant
 
--- * Method
-
-{-data Method where-}
-  {-ReadValue :: ReadValueM BS.ByteString-}
-  {-WriteValue :: BS.ByteString -> WriteValueM BS.ByteString-}
-  {-Notify :: -}
-
 -- * Descriptor
 
 data Descriptor = Descriptor

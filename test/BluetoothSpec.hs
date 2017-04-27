@@ -7,7 +7,6 @@ module BluetoothSpec (spec) where
 
 import Bluetooth
 import Bluetooth.Internal.Types (Error)
-import Control.Monad
 import Control.Monad.IO.Class
 import Data.Either              (isRight)
 import Data.Maybe               (fromJust)
@@ -109,13 +108,13 @@ getServiceSpec :: Spec
 getServiceSpec = describe "getService" $ before connect $ do
 
   it "retrieves services by UUID" $ \conn -> do
-    Right app <- runBluetoothM (registerApplication testApp) conn
+    let simAccessUuid = "1112"
+    print simAccessUuid
     Right (Just service) <- runBluetoothM (getService (testService ^. uuid)) conn
     let [res] = [ c | c <- service ^. characteristics
-                    , c ^. uuid == testCharacteristic ^. uuid
+                    , c ^. uuid == simAccessUuid
                 ]
     h <- runHandler $ res ^. readValue . to fromJust
-    void $ runBluetoothM (unregisterApplication app) conn
     h `shouldBe` Right ("response" :: BS.ByteString)
 
   {-it "fails if the application does not exist" $ \conn -> do-}
