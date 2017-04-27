@@ -131,13 +131,13 @@ triggerNotification (ApplicationRegistered _) c = do
         Right val -> return val
 
 -- | Get a service by UUID. Returns Nothing if the service could not be found.
-{-getService :: UUID -> BluetoothM (Maybe Service)-}
-{-getService serviceUUID = do-}
-  {-services <- getAllServices-}
-  {-return $ case filter (\x -> x ^. uuid == serviceUUID) services of-}
-    {-[] -> Nothing-}
-    {--- This should never be a list with more than one element.-}
-    {-(x:_) -> Just x-}
+getService :: UUID -> BluetoothM (Maybe Service)
+getService serviceUUID = do
+  services' <- getAllServices
+  return $ case filter (\x -> x ^. uuid == serviceUUID) services' of
+    [] -> Nothing
+    -- This should never be a list with more than one element.
+    (x:_) -> Just x
 
 {--- | Get all registered services.-}
 getAllServices :: BluetoothM [Service]

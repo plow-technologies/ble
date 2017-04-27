@@ -6,8 +6,11 @@
 module BluetoothSpec (spec) where
 
 import Bluetooth
+import Bluetooth.Internal.Types (Error)
+import Control.Monad
 import Control.Monad.IO.Class
-import Data.Either            (isRight)
+import Data.Either              (isRight)
+import Data.Maybe               (fromJust)
 import DBus
 import Test.Hspec
 
@@ -24,7 +27,7 @@ spec = do
   advertiseSpec
   unadvertiseSpec
   {-notifySpec-}
-  {-getServiceSpec-}
+  getServiceSpec
 #endif
 
 registerApplicationSpec :: Spec
@@ -102,21 +105,23 @@ unadvertiseSpec = describe "unadvertise" $ before connect $ do
     {-_ <- runBluetoothM (testCharacteristic ^. stopNotify) conn-}
     {-readIORef isNotifying `shouldReturn` False-}
 
-{-getServiceSpec :: Spec-}
-{-getServiceSpec = describe "getService" $ before connect $ do-}
+getServiceSpec :: Spec
+getServiceSpec = describe "getService" $ before connect $ do
 
-  {-it "retrieves services by UUID" $ \conn -> do-}
-    {-v <- runBluetoothM (registerApplication testApp) conn-}
-    {-h <- flip runBluetoothM conn $ do-}
-          {-Right (Just service) <- getService (testService ^. uuid)-}
-          {-Just res <- service ^. at (testCharacteristic ^. uuid) . readValue-}
-          {-return res-}
-    {-runHandler h `shouldReturn` "response"-}
+  it "retrieves services by UUID" $ \conn -> do
+    Right app <- runBluetoothM (registerApplication testApp) conn
+    Right (Just service) <- runBluetoothM (getService (testService ^. uuid)) conn
+    let [res] = [ c | c <- service ^. characteristics
+                    , c ^. uuid == testCharacteristic ^. uuid
+                ]
+    h <- runHandler $ res ^. readValue . to fromJust
+    void $ runBluetoothM (unregisterApplication app) conn
+    h `shouldBe` Right ("response" :: BS.ByteString)
 
-  {-it "fails if the application does not exist" \conn -> $ pending-}
+  {-it "fails if the application does not exist" $ \conn -> do-}
     {-let unknownUUID = "da92ce4a-2a0f-4c5d-ac68-9d3b01886976"-}
     {-h <- runBluetoothM (getService unknownUUID) conn-}
-    {-runHandler h `shouldReturn` Nothing-}
+    {-h `shouldReturn` Nothing-}
 
 -- * Test service
 
@@ -148,4 +153,7 @@ testAdv
 -- * Orphans
 
 instance Eq MethodError where
+  a == b = show a == show b
+
+instance Eq Error where
   a == b = show a == show b

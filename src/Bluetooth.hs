@@ -44,6 +44,7 @@
 -- >   threadDelay maxBound
 module Bluetooth
   (
+  -- * Writing peripherals/servers
     registerApplication
   , registerAndAdvertiseApplication
   , unregisterApplication
@@ -53,6 +54,11 @@ module Bluetooth
   , connect
   , runBluetoothM
   , runHandler
+
+  -- * Writing centrals/clients
+  , getAllServices
+  , getService
+
 
   -- * Field lenses
   , uuid
