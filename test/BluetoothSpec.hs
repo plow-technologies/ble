@@ -27,6 +27,7 @@ spec = do
   unadvertiseSpec
   {-notifySpec-}
   getServiceSpec
+  getAllServicesSpec
 #endif
 
 registerApplicationSpec :: Spec
@@ -117,10 +118,18 @@ getServiceSpec = describe "getService" $ before connect $ do
     h <- runHandler $ res ^. readValue . to fromJust
     h `shouldBe` Right ("response" :: BS.ByteString)
 
-  {-it "fails if the application does not exist" $ \conn -> do-}
-    {-let unknownUUID = "da92ce4a-2a0f-4c5d-ac68-9d3b01886976"-}
-    {-h <- runBluetoothM (getService unknownUUID) conn-}
-    {-h `shouldReturn` Nothing-}
+  it "returns Nothing if the application does not exist" $ \conn -> do
+    let unknownUUID = "da92ce4a-2a0f-4c5d-ac68-9d3b01886976"
+    h <- runBluetoothM (getService unknownUUID) conn
+    h `shouldBe` Right Nothing
+
+getAllServicesSpec :: Spec
+getAllServicesSpec = describe "getAllServices" $ before connect $ do
+
+  it "retrieves services" $ \conn -> do
+    services' <- runBluetoothM getAllServices conn
+    print services'
+    services' `shouldBe` Right []
 
 -- * Test service
 
@@ -156,3 +165,9 @@ instance Eq MethodError where
 
 instance Eq Error where
   a == b = show a == show b
+
+instance Show Service where
+  show a = show $ a ^. uuid
+
+instance Eq Service where
+  a == b = a ^. uuid == b ^. uuid

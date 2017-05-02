@@ -143,8 +143,8 @@ getService serviceUUID = do
 getAllServices :: BluetoothM [Service]
 getAllServices = do
   conn <- ask
-  objects :: [(ObjectPath, [(T.Text, DBusValue 'TypeVariant)])] <- toBluetoothM . const $
-    callMethod bluezName "/" (T.pack objectManagerIFace)
+  objects :: [(ObjectPath, [(T.Text, Any)])]
+    <- toBluetoothM . const $ callMethod bluezName "/" (T.pack objectManagerIFace)
        "GetManagedObjects" () [] $ dbusConn conn
 
   -- We need to construct services manually, since we get the characteristics
