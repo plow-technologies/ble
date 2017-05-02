@@ -1,9 +1,10 @@
 #!/bin/bash
 
-mkvirtualenv --python=$(which python3) ble-test
-workon ble-test
+set -o errexit
 
-pip3 install -r requirements.txt
-python3 -m dbusmock --system org.bluez.Mock /org/bluez/Mock org.bluez.Mock
+python3 -m dbusmock --system org.bluez.Mock /org/bluez/Mock org.bluez.Mock &
+sleep 5
+trap 'kill $(jobs -p)' EXIT
 
 gdbus call --system -d org.bluez.Mock -o /org/bluez/Mock -m org.bluez.Mock.AddTemplate 'upower' '{"OnBattery": <true>}'
+

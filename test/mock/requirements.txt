@@ -1,1 +1,2 @@
--e https://github.com/ukBaz/python-dbusmock@egg=dbusmock
+dbus-python==1.2.4
+-e git+https://github.com/ukBaz/python-dbusmock@17e80b8f033e7f670e61206ce66bd8714c9bf1be#egg=dbusmock

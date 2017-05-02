@@ -6,7 +6,9 @@ env:
 
 addons:
   apt:
-    packages: libgmp-dev
+    packages:
+      - libgmp-dev
+      - python3-dbus python3-gi
 
 install:
   # stack

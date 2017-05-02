@@ -7,3 +7,13 @@ service :=
 
 char :=
 
+
+# Testing
+
+Add to `/etc/dbus-1/system.conf`:
+
+  <policy user="root">
+    <allow own="org.bluez.Mock"/>
+  </policy>
+
+Then `systemctl reload dbus`.

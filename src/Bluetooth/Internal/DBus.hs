@@ -18,6 +18,8 @@ import Bluetooth.Internal.Utils
 import Bluetooth.Internal.Errors
 import Bluetooth.Internal.Lenses
 
+import Debug.Trace
+
 -- | Registers an application and advertises it. If you would like to have
 -- finer-grained control of the advertisement, use @registerApplication@ and
 -- @advertise@.
@@ -139,28 +141,28 @@ getService serviceUUID = do
     -- This should never be a list with more than one element.
     (x:_) -> Just x
 
-{--- | Get all registered services.-}
+-- | Get all registered services.
 getAllServices :: BluetoothM [Service]
 getAllServices = do
   conn <- ask
-  objects :: [(ObjectPath, [(T.Text, Any)])]
+  objects :: Map.Map ObjectPath (Map.Map T.Text (Map.Map T.Text DontCareFromRep))
     <- toBluetoothM . const $ callMethod bluezName "/" (T.pack objectManagerIFace)
        "GetManagedObjects" () [] $ dbusConn conn
 
+  traceShowM $ Map.keys objects
+  traceShowM $ Map.elems objects
   -- We need to construct services manually, since we get the characteristics
   -- separately.
   let chars =
-       [ objPath
-       | (objPath, ifaces) <- objects
-       , T.pack gattCharacteristicIFace `elem` (fst <$> ifaces)
-       ]
+       Map.keys $ Map.filter (T.pack gattCharacteristicIFace `Map.member`) objects
   let servs =
-       [ objPath
-       | (objPath, ifaces) <- objects
-       , T.pack gattServiceIFace `elem` (fst <$> ifaces)
-       ]
+       Map.keys $ Map.filter (T.pack gattServiceIFace `Map.member`) objects
+  traceShowM chars
+  traceShowM servs
   forM servs $ \s -> mkService s [ c | c <- chars , s  `isPathPrefix` c ]
+
   where
+
     mkChar :: ObjectPath -> BluetoothM CharacteristicBS
     mkChar charPath = do
       conn <- ask
@@ -183,11 +185,6 @@ getAllServices = do
         Nothing -> throwError $ OtherError
           "Bluez did not return a UUID for service"
         Just u -> return $ Service u chars
-
-
-  {-let processService servicePath = toBluetoothM . const $ do-}
-        {-callMethod bluezName servicePath (T.pack gattServiceIFace)-}
-          {-"GetAll" () [] $ dbusConn conn-}
 
 
 

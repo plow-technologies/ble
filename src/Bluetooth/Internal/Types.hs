@@ -106,7 +106,7 @@ instance Rand.Random UUID where
     let (a', g') = Rand.randomR (lo,hi) g in (UUID a', g')
   random g = let (a', g') = Rand.random g in (UUID a', g')
 
--- * Any
+-- * Any and DontCare
 
 -- | A Haskell existential type corresponding to DBus' @Variant@.
 data Any where
@@ -115,7 +115,7 @@ data Any where
 instance Representable Any where
   type RepType Any = 'TypeVariant
   toRep (MkAny x) = DBVVariant (toRep x)
-  fromRep = error "not implemented" -- (DBVVariant x) = Just (MkAny x)
+  fromRep = error "not implemented"
 
 -- Note [WithObjectPath]
 data WithObjectPath a = WOP
@@ -124,6 +124,14 @@ data WithObjectPath a = WOP
   } deriving (Eq, Show, Generic, Functor)
 
 makeFields ''WithObjectPath
+
+data DontCareFromRep = DontCareFromRep
+  deriving (Eq, Show, Read, Generic)
+
+instance Representable DontCareFromRep where
+  type RepType DontCareFromRep = 'TypeVariant
+  toRep _ = DBVVariant (toRep ())
+  fromRep _ = Just DontCareFromRep
 
 type AnyDBusDict = 'TypeDict 'TypeString 'TypeVariant
 
