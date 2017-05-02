@@ -1,0 +1,1 @@
+-e https://github.com/ukBaz/python-dbusmock@egg=dbusmock
