@@ -2,15 +2,17 @@ module Bluetooth.Internal.DBus where
 
 import Control.Monad.Except
 import Control.Monad.Reader
-import Data.IORef           (readIORef, writeIORef)
+import Data.IORef           (IORef, readIORef, writeIORef, newIORef)
 import Data.Monoid          ((<>))
 import DBus
 import DBus.Signal          (execSignalT)
 import Lens.Micro
+import System.IO.Unsafe     (unsafePerformIO)
 
-import qualified Data.Map        as Map
-import qualified Data.Text       as T
+import qualified Data.Map  as Map
+import qualified Data.Text as T
 
+import Bluetooth.Internal.Errors
 import Bluetooth.Internal.HasInterface
 import Bluetooth.Internal.Interfaces
 import Bluetooth.Internal.Types
@@ -34,8 +36,10 @@ registerApplication :: Application -> BluetoothM ApplicationRegistered
 registerApplication app = do
   conn <- ask
   addAllObjs conn app
+  bluezPath' <- liftIO $ readIORef bluezPath
+  bluezName' <- liftIO $ readIORef bluezName
   () <- toBluetoothM . const
-    $ callMethod bluezName bluezPath (T.pack gattManagerIFace)
+    $ callMethod bluezName' bluezPath' (T.pack gattManagerIFace)
         "RegisterApplication" args []
     $ dbusConn conn
   return $ ApplicationRegistered (app ^. path)
@@ -46,8 +50,10 @@ registerApplication app = do
 unregisterApplication :: ApplicationRegistered -> BluetoothM ()
 unregisterApplication (ApplicationRegistered appPath) = do
   conn <- ask
+  bluezPath' <- liftIO $ readIORef bluezPath
+  bluezName' <- liftIO $ readIORef bluezName
   toBluetoothM . const
-    $ callMethod bluezName bluezPath (T.pack gattManagerIFace)
+    $ callMethod bluezName' bluezPath' (T.pack gattManagerIFace)
         "UnregisterApplication" appPath []
     $ dbusConn conn
 
@@ -81,8 +87,10 @@ advertise adv = do
     addObject conn (adv ^. path)
       $  (adv `withInterface` leAdvertisementIFaceP)
       <> ((adv ^. value) `withInterface` propertiesIFaceP)
+  bluezPath' <- liftIO $ readIORef bluezPath
+  bluezName' <- liftIO $ readIORef bluezName
   toBluetoothM . const $ do
-    callMethod bluezName bluezPath (T.pack leAdvertisingManagerIFace) "RegisterAdvertisement" args []
+    callMethod bluezName' bluezPath' (T.pack leAdvertisingManagerIFace) "RegisterAdvertisement" args []
       $ dbusConn conn
   where
     args :: (ObjectPath, Map.Map T.Text Any)
@@ -92,8 +100,10 @@ advertise adv = do
 unadvertise :: WithObjectPath Advertisement -> BluetoothM ()
 unadvertise adv = do
   conn <- ask
+  bluezPath' <- liftIO $ readIORef bluezPath
+  bluezName' <- liftIO $ readIORef bluezName
   toBluetoothM . const $ do
-    callMethod bluezName bluezPath (T.pack leAdvertisingManagerIFace) "UnregisterAdvertisement" args []
+    callMethod bluezName' bluezPath' (T.pack leAdvertisingManagerIFace) "UnregisterAdvertisement" args []
       $ dbusConn conn
   where
     args :: ObjectPath
@@ -145,8 +155,9 @@ getService serviceUUID = do
 getAllServices :: BluetoothM [Service]
 getAllServices = do
   conn <- ask
+  bluezName' <- liftIO $ readIORef bluezName
   objects :: Map.Map ObjectPath (Map.Map T.Text (Map.Map T.Text DontCareFromRep))
-    <- toBluetoothM . const $ callMethod bluezName "/" (T.pack objectManagerIFace)
+    <- toBluetoothM . const $ callMethod bluezName' "/" (T.pack objectManagerIFace)
        "GetManagedObjects" () [] $ dbusConn conn
 
   traceShowM $ Map.keys objects
@@ -166,8 +177,9 @@ getAllServices = do
     mkChar :: ObjectPath -> BluetoothM CharacteristicBS
     mkChar charPath = do
       conn <- ask
+      bluezName' <- liftIO $ readIORef bluezName
       charProps <- toBluetoothM . const $
-        callMethod bluezName charPath (T.pack gattCharacteristicIFace)
+        callMethod bluezName' charPath (T.pack gattCharacteristicIFace)
           "GetAll" () [] $ dbusConn conn
       case charFromRep charProps of
         Nothing -> throwError $ OtherError
@@ -177,8 +189,9 @@ getAllServices = do
     mkService :: ObjectPath -> [ObjectPath] -> BluetoothM Service
     mkService servicePath charPaths = do
       conn <- ask
+      bluezName' <- liftIO $ readIORef bluezName
       serviceProps :: Map.Map T.Text UUID <- toBluetoothM . const $
-        callMethod bluezName servicePath (T.pack gattServiceIFace)
+        callMethod bluezName' servicePath (T.pack gattServiceIFace)
           "GetAll" () [] $ dbusConn conn
       chars <- mapM mkChar charPaths
       case Map.lookup "UUID" serviceProps of
@@ -190,8 +203,10 @@ getAllServices = do
 
 -- * Constants
 
-bluezName :: T.Text
-bluezName = "org.bluez"
+bluezName :: IORef T.Text
+bluezName = unsafePerformIO $ newIORef "org.bluez"
+{-# NOINLINE bluezName #-}
 
-bluezPath :: ObjectPath
-bluezPath = "/org/bluez/hci0"
+bluezPath :: IORef ObjectPath
+bluezPath = unsafePerformIO $ newIORef "/org/bluez/hci0"
+{-# NOINLINE bluezPath #-}
