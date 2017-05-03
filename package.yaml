@@ -31,6 +31,10 @@ extra-source-files:
   - README.md
   - package.yaml
   - LICENSE
+  - test/Mock/requirements.txt
+
+data-files:
+  - test/Mock/start_mock.sh
 
 when:
   - condition: flag(bluez543)
@@ -90,6 +94,7 @@ tests:
       - hspec > 2 && < 3
       - QuickCheck >= 2.8 && < 2.10
       - quickcheck-instances >= 0.3 && < 0.4
+      - typed-process >= 0.1 && < 0.2
       - hslogger
 #   doctest:
 #     main:            Doctest.hs

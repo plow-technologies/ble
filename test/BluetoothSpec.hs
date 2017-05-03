@@ -15,6 +15,8 @@ import Test.Hspec
 
 import qualified Data.ByteString as BS
 
+import Mock
+
 
 spec :: Spec
 spec = do
@@ -108,12 +110,10 @@ unadvertiseSpec = describe "unadvertise" $ before connect $ do
 getServiceSpec :: Spec
 getServiceSpec = describe "getService" $ before connect $ do
 
-  it "retrieves services by UUID" $ \conn -> do
-    let simAccessUuid = "1112"
-    print simAccessUuid
+  it "retrieves services by UUID" $ \conn -> withHRSService $ \sUUID -> do
     Right (Just service) <- runBluetoothM (getService (testService ^. uuid)) conn
     let [res] = [ c | c <- service ^. characteristics
-                    , c ^. uuid == simAccessUuid
+                    , c ^. uuid == sUUID
                 ]
     h <- runHandler $ res ^. readValue . to fromJust
     h `shouldBe` Right ("response" :: BS.ByteString)
@@ -126,7 +126,7 @@ getServiceSpec = describe "getService" $ before connect $ do
 getAllServicesSpec :: Spec
 getAllServicesSpec = describe "getAllServices" $ before connect $ do
 
-  it "retrieves services" $ \conn -> do
+  it "retrieves services" $ \conn -> withHRSService $ \_ -> do
     services' <- runBluetoothM getAllServices conn
     print services'
     services' `shouldBe` Right []

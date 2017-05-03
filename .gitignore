@@ -2,4 +2,5 @@
 /dist-newstyle/
 /.stack-work/
 /utils/
+/test/Mock/src
 .#*
