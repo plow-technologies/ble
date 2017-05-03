@@ -7,9 +7,10 @@ module BluetoothSpec (spec) where
 
 import Bluetooth
 import Bluetooth.Internal.Types (Error)
+import Control.Monad
 import Control.Monad.IO.Class
 import Data.Either              (isRight)
-import Data.Maybe               (fromJust)
+import Data.Maybe               (isJust)
 import DBus
 import Test.Hspec
 
@@ -27,7 +28,6 @@ spec = do
   unregisterApplicationSpec
   advertiseSpec
   unadvertiseSpec
-  {-notifySpec-}
   getServiceSpec
   getAllServicesSpec
 #endif
@@ -51,6 +51,7 @@ unregisterApplicationSpec = describe "unregisterApplication" $ before connect $ 
     v1 <- runBluetoothM (unregisterApplication p) conn
     v1 `shouldSatisfy` isRight
     v2 <- runBluetoothM (registerApplication testApp) conn
+    void $ runBluetoothM (unregisterApplication $ fromRight v2) conn
     v2 `shouldSatisfy` isRight
 
 advertiseSpec :: Spec
@@ -90,33 +91,12 @@ unadvertiseSpec = describe "unadvertise" $ before connect $ do
     v3 <- runBluetoothM (advertise testAdv) conn
     v3 `shouldSatisfy` isRight
 
-{-notifySpec :: Spec-}
-{-notifySpec = describe "notification" $ before connect $ do-}
-
-  {-it "accepts StartNotify" $ \conn -> do-}
-    {-readIORef isNotifying `shouldReturn` False-}
-    {-v <- runBluetoothM (registerApplication testApp) conn-}
-    {-_ <- runBluetoothM (testCharacteristic ^. startNotify) conn-}
-    {-readIORef isNotifying `shouldReturn` True-}
-
-  {-it "accepts StopNotify" $ \conn -> do-}
-    {-readIORef isNotifying `shouldReturn` False-}
-    {-v <- runBluetoothM (registerApplication testApp) conn-}
-    {-_ <- runBluetoothM (testCharacteristic ^. startNotify) conn-}
-    {-readIORef isNotifying `shouldReturn` True-}
-    {-_ <- runBluetoothM (testCharacteristic ^. stopNotify) conn-}
-    {-readIORef isNotifying `shouldReturn` False-}
-
 getServiceSpec :: Spec
 getServiceSpec = describe "getService" $ before connect $ do
 
-  it "retrieves services by UUID" $ \conn -> withHRSService $ \sUUID -> do
-    Right (Just service) <- runBluetoothM (getService (testService ^. uuid)) conn
-    let [res] = [ c | c <- service ^. characteristics
-                    , c ^. uuid == sUUID
-                ]
-    h <- runHandler $ res ^. readValue . to fromJust
-    h `shouldBe` Right ("response" :: BS.ByteString)
+  it "retrieves services by UUID" $ \conn -> withAService $ \sUUID -> do
+    Right ms <- runBluetoothM (getService sUUID) conn
+    ms `shouldSatisfy` isJust
 
   it "returns Nothing if the application does not exist" $ \conn -> do
     let unknownUUID = "da92ce4a-2a0f-4c5d-ac68-9d3b01886976"
@@ -126,7 +106,7 @@ getServiceSpec = describe "getService" $ before connect $ do
 getAllServicesSpec :: Spec
 getAllServicesSpec = describe "getAllServices" $ before connect $ do
 
-  it "retrieves services" $ \conn -> withHRSService $ \_ -> do
+  it "retrieves services" $ \conn -> withAService $ \_ -> do
     services' <- runBluetoothM getAllServices conn
     print services'
     services' `shouldBe` Right []
@@ -157,6 +137,12 @@ testCharacteristic
 testAdv :: WithObjectPath Advertisement
 testAdv
   = advertisementFor testApp
+
+-- * Utils
+
+fromRight :: Either a b -> b
+fromRight (Right x) = x
+fromRight _ = error "Expected Right, got Left"
 
 -- * Orphans
 
