@@ -41,6 +41,7 @@ registerApplicationSpec = describe "registerApplication" $ before connect $ do
     -- We verify that the application is in fact registered by checking that
     -- attempting to register it again throws an AlreadyExists error.
     Left err <- runBluetoothM (registerApplication testApp) conn
+    _ <- runBluetoothM (unregisterApplication $ fromRight v) conn
     show err `shouldContain` "Already Exists"
 
 unregisterApplicationSpec :: Spec

@@ -7,8 +7,6 @@ import           Paths_ble
 import           System.IO
 import qualified System.Process          as P
 
-import Control.Concurrent
-
 withAService :: (UUID -> IO a) -> IO a
 withAService x = do
   writeIORef bluezName "org.bluez.Mock"
@@ -17,11 +15,9 @@ withAService x = do
   hSetBuffering stdout LineBuffering
   hSetBuffering stdin LineBuffering
   file <- getDataFileName "test/Mock/start_mock.sh"
-  putStrLn "starting proc"
-  proc <- P.spawnCommand ("bash " ++ file)
-  putStrLn "waiting for proc to be ready "
-  threadDelay $ 5 * 10^(6 :: Int)
+  (_inHandle, Just outHandle, _errHandle, proc)
+    <- P.createProcess (P.shell $ "bash " ++ file) { P.std_out = P.CreatePipe }
+  _ <- hGetLine outHandle
   val <- x uuid
-  putStrLn "ending proc"
   P.terminateProcess proc
   return val
