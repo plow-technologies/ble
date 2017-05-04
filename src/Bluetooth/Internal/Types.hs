@@ -314,6 +314,13 @@ instance Representable (WithObjectPath Service) where
 
   fromRep _ = error "not implemented"
 
+serviceFromRep :: DBusValue AnyDBusDict -> Maybe Service
+serviceFromRep dict' = do
+  dict :: Map.Map T.Text (DBusValue 'TypeVariant) <- fromRep dict'
+  let unmakeAny :: (Representable a) => DBusValue 'TypeVariant -> Maybe a
+      unmakeAny x = fromRep =<< fromVariant x
+  uuid' :: UUID <- unmakeAny =<< Map.lookup "UUID" dict
+  return $ Service uuid' []
 
 -- * Application
 

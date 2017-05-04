@@ -20,7 +20,6 @@ import Bluetooth.Internal.Utils
 import Bluetooth.Internal.Errors
 import Bluetooth.Internal.Lenses
 
-import Debug.Trace
 
 -- | Registers an application and advertises it. If you would like to have
 -- finer-grained control of the advertisement, use @registerApplication@ and
@@ -160,16 +159,12 @@ getAllServices = do
     <- toBluetoothM . const $ callMethod bluezName' "/" (T.pack objectManagerIFace)
        "GetManagedObjects" () [] $ dbusConn conn
 
-  traceShowM $ Map.keys objects
-  traceShowM $ Map.elems objects
   -- We need to construct services manually, since we get the characteristics
   -- separately.
   let chars =
        Map.keys $ Map.filter (T.pack gattCharacteristicIFace `Map.member`) objects
   let servs =
        Map.keys $ Map.filter (T.pack gattServiceIFace `Map.member`) objects
-  traceShowM chars
-  traceShowM servs
   forM servs $ \s -> mkService s [ c | c <- chars , s  `isPathPrefix` c ]
 
   where
@@ -179,8 +174,8 @@ getAllServices = do
       conn <- ask
       bluezName' <- liftIO $ readIORef bluezName
       charProps <- toBluetoothM . const $
-        callMethod bluezName' charPath (T.pack gattCharacteristicIFace)
-          "GetAll" () [] $ dbusConn conn
+        callMethod bluezName' charPath (T.pack propertiesIFace)
+          "GetAll" (T.pack gattCharacteristicIFace) [] $ dbusConn conn
       case charFromRep charProps of
         Nothing -> throwError $ OtherError
           "Bluez returned invalid characteristic"
@@ -190,14 +185,14 @@ getAllServices = do
     mkService servicePath charPaths = do
       conn <- ask
       bluezName' <- liftIO $ readIORef bluezName
-      serviceProps :: Map.Map T.Text UUID <- toBluetoothM . const $
-        callMethod bluezName' servicePath (T.pack gattServiceIFace)
-          "GetAll" () [] $ dbusConn conn
+      serviceProps  <- toBluetoothM . const $
+        callMethod bluezName' servicePath (T.pack propertiesIFace)
+          "GetAll" (T.pack gattServiceIFace) [] $ dbusConn conn
       chars <- mapM mkChar charPaths
-      case Map.lookup "UUID" serviceProps of
+      case serviceFromRep serviceProps of
         Nothing -> throwError $ OtherError
-          "Bluez did not return a UUID for service"
-        Just u -> return $ Service u chars
+          "Bluez returned invalid service"
+        Just serv -> return $ serv & characteristics .~ chars
 
 
 

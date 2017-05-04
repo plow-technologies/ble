@@ -14,7 +14,7 @@ objectManagerIFace :: String
 objectManagerIFace = symbolVal objectManagerIFaceP
 
 
-type Properties    = "org.freedesktop.DBus.Properties"
+type Properties = "org.freedesktop.DBus.Properties"
 
 propertiesIFaceP :: Proxy Properties
 propertiesIFaceP = Proxy

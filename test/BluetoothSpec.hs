@@ -67,7 +67,7 @@ advertiseSpec = describe "advertise" $ before connect $ do
         _ <- runBluetoothM (unadvertise ad) conn
         show err `shouldContain` "Already Exists"
 
-  it "adverstises a set of services" $ \conn -> checkAdvert testAdv conn
+  it "advertises a set of services" $ \conn -> checkAdvert testAdv conn
 
   {-it "works with service data" $ \conn -> do-}
     {-let adv = testAdv-}
@@ -107,10 +107,9 @@ getServiceSpec = describe "getService" $ before connect $ do
 getAllServicesSpec :: Spec
 getAllServicesSpec = describe "getAllServices" $ before connect $ do
 
-  it "retrieves services" $ \conn -> withAService $ \_ -> do
-    services' <- runBluetoothM getAllServices conn
-    print services'
-    services' `shouldBe` Right []
+  it "retrieves services" $ \conn -> withAService $ \sUUID -> do
+    Right [service] <- runBluetoothM getAllServices conn
+    service ^. uuid `shouldBe` sUUID
 
 -- * Test service
 
