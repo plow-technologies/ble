@@ -2,6 +2,12 @@
 
 set -o errexit
 
+# This script registers a mock service with DBus. The service contains one
+# characteristic.
+
+SERVICE_UUID=4ea7235c-8d49-4a6f-abe6-1883218a93a7
+CHARACTERISTIC_UUID=6fe4afc7-ebf8-4369-90aa-0fe45064e3f9
+CHARACTERISTIC_VALUE=1797
 
 python3 -m dbusmock --system org.bluez.Mock / org.bluez \
    2>&1 > /dev/null &
@@ -27,9 +33,18 @@ gdbus call --system -d org.bluez.Mock -o / \
 gdbus call --system -d org.bluez.Mock -o / \
   -m org.bluez.Mock.AddGATTService \
   '/org/bluez/hci0' \
-  '0x180D' \
-  '4ea7235c-8d49-4a6f-abe6-1883218a93a7' \
+  '1' \
+  "$SERVICE_UUID" \
   'true' 2>&1 > /dev/null
+
+gdbus call --system -d org.bluez.Mock -o / \
+  -m org.bluez.Mock.AddGATTCharacteristic \
+  "/org/bluez/hci0/service0001" \
+  '1' \
+  "$CHARACTERISTIC_UUID" \
+  '["read"]' \
+  "$CHARACTERISTIC_VALUE" \
+  'false' 2>&1 > /dev/null
 
 printf "ready\n"
 

@@ -95,21 +95,34 @@ unadvertiseSpec = describe "unadvertise" $ before connect $ do
 getServiceSpec :: Spec
 getServiceSpec = describe "getService" $ before connect $ do
 
-  it "retrieves services by UUID" $ \conn -> withAService $ \sUUID -> do
-    Right ms <- runBluetoothM (getService sUUID) conn
+  it "retrieves services by UUID" $ \conn -> withAService $ do
+    Right ms <- runBluetoothM (getService mockServiceUUID) conn
     ms `shouldSatisfy` isJust
 
-  it "returns Nothing if the application does not exist" $ \conn -> do
+  it "returns Nothing if the application does not exist" $ \conn -> withAService $ do
     let unknownUUID = "da92ce4a-2a0f-4c5d-ac68-9d3b01886976"
     h <- runBluetoothM (getService unknownUUID) conn
     h `shouldBe` Right Nothing
 
+  context "the returned service" $ do
+
+    it "has the service's characteristics" $ \conn -> withAService $ do
+      Right (Just serv) <- runBluetoothM (getService mockServiceUUID) conn
+      let [char] = serv ^. characteristics
+      char ^. uuid `shouldBe` mockCharUUID
+
+    it "has characteristics that can be read" $ \conn -> withAService $ do
+      Right (Just serv) <- runBluetoothM (getService mockServiceUUID) conn
+      let [char] = serv ^. characteristics
+      let Just handler = char ^. readValue
+      runHandler handler `shouldReturn` Right "1797"
+
 getAllServicesSpec :: Spec
 getAllServicesSpec = describe "getAllServices" $ before connect $ do
 
-  it "retrieves services" $ \conn -> withAService $ \sUUID -> do
+  it "retrieves services" $ \conn -> withAService $ do
     Right [service] <- runBluetoothM getAllServices conn
-    service ^. uuid `shouldBe` sUUID
+    service ^. uuid `shouldBe` mockServiceUUID
 
 -- * Test service
 
