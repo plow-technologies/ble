@@ -206,15 +206,15 @@ instance Representable CharacteristicOptions where
     Nothing -> DBVDict []
     Just v  -> DBVDict [(toRep ("offset" :: T.Text), toRep $ MkAny v)]
 
-type CharacteristicBS = Characteristic BS.ByteString
+type CharacteristicBS m = Characteristic m BS.ByteString
 
-data Characteristic typ = Characteristic
+data Characteristic m typ = Characteristic
   { characteristicUuid       :: UUID
   , characteristicProperties :: [CharacteristicProperty]
-  , characteristicReadValue  :: Maybe (Handler typ)
+  , characteristicReadValue  :: Maybe (m typ)
   -- | Write a value. Note that the value is only writeable externally if the
   -- characteristic contains the CPWrite property *and* this is a Just.
-  , characteristicWriteValue :: Maybe (typ -> Handler Bool)
+  , characteristicWriteValue :: Maybe (typ -> m Bool)
   } deriving (Generic)
 
 makeFields ''Characteristic
@@ -246,12 +246,12 @@ objectPathOf = unsafePerformIO $ do
       Just v  -> return (curMap, v)
 {-# NOINLINE objectPathOf #-}
 
-instance IsString (Characteristic a) where
+instance IsString (Characteristic m a) where
   fromString x = Characteristic (fromString x) [] Nothing Nothing
 
 -- Note [WithObjectPath]
-instance Representable (WithObjectPath (Characteristic a)) where
-  type RepType (WithObjectPath (Characteristic a)) = AnyDBusDict
+instance Representable (WithObjectPath (Characteristic m a)) where
+  type RepType (WithObjectPath (Characteristic m a)) = AnyDBusDict
   toRep char = toRep tmap
     where
       tmap :: Map.Map T.Text Any
@@ -261,7 +261,7 @@ instance Representable (WithObjectPath (Characteristic a)) where
                           ]
   fromRep = error "not implemented"
 
-charFromRep :: DBusValue AnyDBusDict -> Maybe (Characteristic a)
+charFromRep :: DBusValue AnyDBusDict -> Maybe (Characteristic m a)
 charFromRep dict' = do
   dict :: Map.Map T.Text (DBusValue 'TypeVariant) <- fromRep dict'
   let unmakeAny :: (Representable a) => DBusValue 'TypeVariant -> Maybe a
@@ -285,19 +285,19 @@ characteristicObjectPath appOPath idx = appOPath & toText %~ addSuffix
 
 -- * Service
 
-data Service = Service
+data Service m = Service
   { serviceUuid            :: UUID
-  , serviceCharacteristics :: [CharacteristicBS]
+  , serviceCharacteristics :: [CharacteristicBS m]
   } deriving (Generic)
 
 makeFields ''Service
 
-instance IsString Service where
+instance IsString (Service m) where
   fromString x = Service (fromString x) []
 
 -- Note [WithObjectPath]
-instance Representable (WithObjectPath Service) where
-  type RepType (WithObjectPath Service) = AnyDBusDict
+instance Representable (WithObjectPath (Service m)) where
+  type RepType (WithObjectPath (Service m)) = AnyDBusDict
   toRep serv = toRep tmap
     where
       tmap :: Map.Map T.Text Any
@@ -314,7 +314,7 @@ instance Representable (WithObjectPath Service) where
 
   fromRep _ = error "not implemented"
 
-serviceFromRep :: DBusValue AnyDBusDict -> Maybe Service
+serviceFromRep :: DBusValue AnyDBusDict -> Maybe (Service m)
 serviceFromRep dict' = do
   dict :: Map.Map T.Text (DBusValue 'TypeVariant) <- fromRep dict'
   let unmakeAny :: (Representable a) => DBusValue 'TypeVariant -> Maybe a
@@ -329,7 +329,7 @@ serviceFromRep dict' = do
 -- have relevance within Bluetooth.
 data Application = Application
   { applicationPath     :: ObjectPath
-  , applicationServices :: [Service]
+  , applicationServices :: [Service Handler]
   } deriving (Generic)
 
 makeFields ''Application

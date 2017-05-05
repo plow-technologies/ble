@@ -103,7 +103,7 @@ advertisementFor app = WOP p adv
 
 
 -- | Triggers notifications or indications.
-triggerNotification :: ApplicationRegistered -> CharacteristicBS -> BluetoothM ()
+triggerNotification :: ApplicationRegistered -> CharacteristicBS Handler -> BluetoothM ()
 triggerNotification (ApplicationRegistered _) c = do
    case c ^. readValue of
      Nothing -> throwError "Handler does not have a readValue implementation!"
@@ -126,7 +126,7 @@ triggerNotification (ApplicationRegistered _) c = do
         Right val -> return val
 
 -- | Get a service by UUID. Returns Nothing if the service could not be found.
-getService :: UUID -> BluetoothM (Maybe Service)
+getService :: UUID -> BluetoothM (Maybe (Service BluetoothM))
 getService serviceUUID = do
   services' <- getAllServices
   return $ case filter (\x -> x ^. uuid == serviceUUID) services' of
@@ -135,7 +135,7 @@ getService serviceUUID = do
     (x:_) -> Just x
 
 -- | Get all registered services.
-getAllServices :: BluetoothM [Service]
+getAllServices :: BluetoothM [Service BluetoothM]
 getAllServices = do
   objects :: Map.Map ObjectPath (Map.Map T.Text (Map.Map T.Text DontCareFromRep))
     <- callMethodBM "/" objectManagerIFace "GetManagedObjects" ()
@@ -150,7 +150,7 @@ getAllServices = do
 
   where
 
-    mkChar :: ObjectPath -> BluetoothM CharacteristicBS
+    mkChar :: ObjectPath -> BluetoothM (CharacteristicBS BluetoothM)
     mkChar charPath = do
       charProps  <- callMethodBM charPath propertiesIFace "GetAll"
         (T.pack gattCharacteristicIFace)
@@ -159,7 +159,7 @@ getAllServices = do
           "Bluez returned invalid characteristic"
         Just c -> return c
 
-    mkService :: ObjectPath -> [ObjectPath] -> BluetoothM Service
+    mkService :: ObjectPath -> [ObjectPath] -> BluetoothM (Service BluetoothM)
     mkService servicePath charPaths = do
       serviceProps <- callMethodBM servicePath propertiesIFace "GetAll"
         (T.pack gattServiceIFace)

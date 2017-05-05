@@ -14,6 +14,7 @@ import Test.QuickCheck.Instances ()
 import qualified Data.Text as T
 
 import Bluetooth.Internal.Types
+import Bluetooth.Internal.Errors
 
 spec :: Spec
 spec = do
@@ -64,7 +65,7 @@ charFromRepSpec :: Spec
 charFromRepSpec = describe "charFromRep" $ do
 
   it "is a left inverse of toRep, modulo handlers" $ property
-    $ \(char :: Characteristic Void) objpath ->
+    $ \(char :: Characteristic Handler Void) objpath ->
       charFromRep (toRep (WOP objpath char)) `shouldBe` Just char
 
 
@@ -93,11 +94,11 @@ instance Arbitrary Application where
 instance Arbitrary ObjectPath where
   arbitrary = objectPath . T.pack <$> arbitrary
 
-instance Arbitrary Service where
+instance (Monad m) => Arbitrary (Service m) where
   arbitrary = Service <$> arbitrary <*> arbitrary
 
-instance {-# OVERLAPPABLE #-} (CoArbitrary a, Arbitrary a)
-  => Arbitrary (Characteristic a) where
+instance {-# OVERLAPPABLE #-} (CoArbitrary a, Arbitrary a, Monad m)
+  => Arbitrary (Characteristic m a) where
   arbitrary = Characteristic
     <$> arbitrary
     <*> arbitrary
@@ -107,17 +108,17 @@ instance {-# OVERLAPPABLE #-} (CoArbitrary a, Arbitrary a)
 instance Arbitrary CharacteristicProperty where
   arbitrary = elements [minBound..maxBound]
 
-instance Eq (Characteristic Void) where
+instance Eq (Characteristic m Void) where
   a == b
     = a ^. uuid       == b ^. uuid
    && a ^. properties == b ^. properties
 
-instance Show (Characteristic Void) where
+instance Show (Characteristic m Void) where
   show a = "Characteristic { "
         ++ "characteristicUuid = " ++ show (a ^. uuid) ++ ", "
         ++ "characteristicProperties = " ++ show (a ^. properties) ++ " }"
 
-instance {-# OVERLAPPING #-} Arbitrary (Characteristic Void) where
+instance {-# OVERLAPPING #-} Arbitrary (Characteristic m Void) where
   arbitrary = Characteristic
     <$> arbitrary
     <*> arbitrary
