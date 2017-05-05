@@ -2,6 +2,10 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 #ifndef Bluez
 {-# OPTIONS_GHC -fno-warn-unused-binds #-}
+#else
+#ifndef DBus
+{-# OPTIONS_GHC -fno-warn-unused-binds #-}
+#endif
 #endif
 module BluetoothSpec (spec) where
 
@@ -21,16 +25,17 @@ import Mock
 
 spec :: Spec
 spec = do
-#ifndef Bluez
-  return ()
-#else
+#ifdef Bluez
   registerApplicationSpec
   unregisterApplicationSpec
   advertiseSpec
   unadvertiseSpec
+#endif
+#ifdef DBusMock
   getServiceSpec
   getAllServicesSpec
 #endif
+  return ()
 
 registerApplicationSpec :: Spec
 registerApplicationSpec = describe "registerApplication" $ before connect $ do

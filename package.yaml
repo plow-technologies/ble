@@ -26,6 +26,10 @@ flags:
     description: Whether to run tests that require Bluez
     manual: True
     default: True
+  hasDBus:
+    description: Whether to run tests that require DBus mocking
+    manual: True
+    default: False
 
 extra-source-files:
   - README.md
@@ -43,6 +47,10 @@ when:
 when:
   - condition: flag(hasBluez)
     cpp-options: -DBluez
+
+when:
+  - condition: flag(hasDBus)
+    cpp-options: -DDBusMock
 
 dependencies:
   - base >= 4.8 && < 4.10

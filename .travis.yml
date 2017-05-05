@@ -16,13 +16,16 @@ install:
   - export PATH=~/.local/bin:$PATH
   - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
   - stack --version
+  # python reqs
+  - pip install -r test/Mock/requirements.txt
 
 script:
   - stack setup --no-terminal
-  - stack build --ghc-options=-Werror --no-terminal --flag ble:-hasBluez
-  - stack test --ghc-options=-Werror --no-terminal  --flag ble:-hasBluez
+  - stack build --ghc-options=-Werror --no-terminal --flag ble:-hasBluez --flag ble:hasDBus
+  - stack test --ghc-options=-Werror --no-terminal  --flag ble:-hasBluez --flag ble:hasDBus
   - cmp README.md examples/README.lhs
 
 cache:
   directories:
     - $HOME/.stack
+    - $HOME/.pip
