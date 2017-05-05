@@ -1,4 +1,7 @@
-sudo: false
+sudo: required
+dist: trusty
+
+python: "3.4"
 
 env:
   - STACK_YAML=stack.yaml
@@ -8,7 +11,7 @@ addons:
   apt:
     packages:
       - libgmp-dev
-      - python3-dbus python3-gi
+      - python3-dbus python3-gi python3-pip
 
 install:
   # stack
@@ -17,7 +20,7 @@ install:
   - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
   - stack --version
   # python reqs
-  - pip install -r test/Mock/requirements.txt
+  - pip3 install --user -r test/Mock/requirements.txt
 
 script:
   - stack setup --no-terminal
