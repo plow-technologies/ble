@@ -36,11 +36,7 @@ registerApplication app = do
   conn <- ask
   addAllObjs conn app
   bluezPath' <- liftIO $ readIORef bluezPath
-  bluezName' <- liftIO $ readIORef bluezName
-  () <- toBluetoothM . const
-    $ callMethod bluezName' bluezPath' (T.pack gattManagerIFace)
-        "RegisterApplication" args []
-    $ dbusConn conn
+  () <- callMethodBM bluezPath' gattManagerIFace "RegisterApplication" args
   return $ ApplicationRegistered (app ^. path)
   where
     args :: (ObjectPath, Map.Map T.Text Any)
@@ -48,13 +44,8 @@ registerApplication app = do
 
 unregisterApplication :: ApplicationRegistered -> BluetoothM ()
 unregisterApplication (ApplicationRegistered appPath) = do
-  conn <- ask
   bluezPath' <- liftIO $ readIORef bluezPath
-  bluezName' <- liftIO $ readIORef bluezName
-  toBluetoothM . const
-    $ callMethod bluezName' bluezPath' (T.pack gattManagerIFace)
-        "UnregisterApplication" appPath []
-    $ dbusConn conn
+  callMethodBM bluezPath' gattManagerIFace "UnregisterApplication" appPath
 
 
 -- | Adds handlers for all the objects managed by the Application (plus the
@@ -87,10 +78,7 @@ advertise adv = do
       $  (adv `withInterface` leAdvertisementIFaceP)
       <> ((adv ^. value) `withInterface` propertiesIFaceP)
   bluezPath' <- liftIO $ readIORef bluezPath
-  bluezName' <- liftIO $ readIORef bluezName
-  toBluetoothM . const $ do
-    callMethod bluezName' bluezPath' (T.pack leAdvertisingManagerIFace) "RegisterAdvertisement" args []
-      $ dbusConn conn
+  callMethodBM bluezPath' leAdvertisingManagerIFace "RegisterAdvertisement" args
   where
     args :: (ObjectPath, Map.Map T.Text Any)
     args = (adv ^. path, Map.empty)
@@ -98,12 +86,8 @@ advertise adv = do
 -- | Unregister an adverstisement.
 unadvertise :: WithObjectPath Advertisement -> BluetoothM ()
 unadvertise adv = do
-  conn <- ask
   bluezPath' <- liftIO $ readIORef bluezPath
-  bluezName' <- liftIO $ readIORef bluezName
-  toBluetoothM . const $ do
-    callMethod bluezName' bluezPath' (T.pack leAdvertisingManagerIFace) "UnregisterAdvertisement" args []
-      $ dbusConn conn
+  callMethodBM bluezPath' leAdvertisingManagerIFace "UnregisterAdvertisement" args
   where
     args :: ObjectPath
     args = adv ^. path
@@ -153,11 +137,8 @@ getService serviceUUID = do
 -- | Get all registered services.
 getAllServices :: BluetoothM [Service]
 getAllServices = do
-  conn <- ask
-  bluezName' <- liftIO $ readIORef bluezName
   objects :: Map.Map ObjectPath (Map.Map T.Text (Map.Map T.Text DontCareFromRep))
-    <- toBluetoothM . const $ callMethod bluezName' "/" (T.pack objectManagerIFace)
-       "GetManagedObjects" () [] $ dbusConn conn
+    <- callMethodBM "/" objectManagerIFace "GetManagedObjects" ()
 
   -- We need to construct services manually, since we get the characteristics
   -- separately.
@@ -171,11 +152,8 @@ getAllServices = do
 
     mkChar :: ObjectPath -> BluetoothM CharacteristicBS
     mkChar charPath = do
-      conn <- ask
-      bluezName' <- liftIO $ readIORef bluezName
-      charProps <- toBluetoothM . const $
-        callMethod bluezName' charPath (T.pack propertiesIFace)
-          "GetAll" (T.pack gattCharacteristicIFace) [] $ dbusConn conn
+      charProps  <- callMethodBM charPath propertiesIFace "GetAll"
+        (T.pack gattCharacteristicIFace)
       case charFromRep charProps of
         Nothing -> throwError $ OtherError
           "Bluez returned invalid characteristic"
@@ -183,11 +161,8 @@ getAllServices = do
 
     mkService :: ObjectPath -> [ObjectPath] -> BluetoothM Service
     mkService servicePath charPaths = do
-      conn <- ask
-      bluezName' <- liftIO $ readIORef bluezName
-      serviceProps  <- toBluetoothM . const $
-        callMethod bluezName' servicePath (T.pack propertiesIFace)
-          "GetAll" (T.pack gattServiceIFace) [] $ dbusConn conn
+      serviceProps <- callMethodBM servicePath propertiesIFace "GetAll"
+        (T.pack gattServiceIFace)
       chars <- mapM mkChar charPaths
       case serviceFromRep serviceProps of
         Nothing -> throwError $ OtherError
@@ -205,3 +180,15 @@ bluezName = unsafePerformIO $ newIORef "org.bluez"
 bluezPath :: IORef ObjectPath
 bluezPath = unsafePerformIO $ newIORef "/org/bluez/hci0"
 {-# NOINLINE bluezPath #-}
+
+
+callMethodBM :: (Representable args, Representable ret)
+  => ObjectPath
+  -> String
+  -> T.Text
+  -> args
+  -> BluetoothM ret
+callMethodBM opath iface methodName args = do
+  conn <- ask
+  bluezName' <- liftIO $ readIORef bluezName
+  toBluetoothM . const $ callMethod bluezName' opath (T.pack iface) methodName args [] (dbusConn conn)
