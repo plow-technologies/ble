@@ -7,7 +7,7 @@ set -o errexit
 
 SERVICE_UUID=4ea7235c-8d49-4a6f-abe6-1883218a93a7
 CHARACTERISTIC_UUID=6fe4afc7-ebf8-4369-90aa-0fe45064e3f9
-CHARACTERISTIC_VALUE=1797
+CHARACTERISTIC_VALUE=3
 
 python3 -m dbusmock --system org.bluez.Mock / org.bluez \
    2>&1 > /dev/null &

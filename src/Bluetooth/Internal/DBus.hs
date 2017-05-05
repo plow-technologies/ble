@@ -150,14 +150,37 @@ getAllServices = do
 
   where
 
+    charFromRep :: ObjectPath -> DBusValue AnyDBusDict
+      -> Maybe (CharacteristicBS BluetoothM)
+    charFromRep charPath dict' = do
+      dict :: Map.Map T.Text (DBusValue 'TypeVariant) <- fromRep dict'
+      let unmakeAny :: (Representable a) => DBusValue 'TypeVariant -> Maybe a
+          unmakeAny x = fromRep =<< fromVariant x
+      uuid' :: UUID <- unmakeAny =<< Map.lookup "UUID" dict
+      properties' <- unmakeAny =<< Map.lookup "Flags" dict
+      let mrv = if CPRead `elem` properties'
+            then Just $
+              callMethodBM charPath gattCharacteristicIFace "ReadValue" ()
+            else Nothing
+      let char = Characteristic uuid' properties' mrv Nothing
+      return char
+
     mkChar :: ObjectPath -> BluetoothM (CharacteristicBS BluetoothM)
     mkChar charPath = do
       charProps  <- callMethodBM charPath propertiesIFace "GetAll"
         (T.pack gattCharacteristicIFace)
-      case charFromRep charProps of
+      case charFromRep charPath charProps of
         Nothing -> throwError $ OtherError
           "Bluez returned invalid characteristic"
         Just c -> return c
+
+    serviceFromRep :: DBusValue AnyDBusDict -> Maybe (Service m)
+    serviceFromRep dict' = do
+      dict :: Map.Map T.Text (DBusValue 'TypeVariant) <- fromRep dict'
+      let unmakeAny :: (Representable a) => DBusValue 'TypeVariant -> Maybe a
+          unmakeAny x = fromRep =<< fromVariant x
+      uuid' :: UUID <- unmakeAny =<< Map.lookup "UUID" dict
+      return $ Service uuid' []
 
     mkService :: ObjectPath -> [ObjectPath] -> BluetoothM (Service BluetoothM)
     mkService servicePath charPaths = do
@@ -168,7 +191,6 @@ getAllServices = do
         Nothing -> throwError $ OtherError
           "Bluez returned invalid service"
         Just serv -> return $ serv & characteristics .~ chars
-
 
 
 -- * Constants

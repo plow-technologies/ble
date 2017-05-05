@@ -115,7 +115,8 @@ getServiceSpec = describe "getService" $ before connect $ do
       Right (Just serv) <- runBluetoothM (getService mockServiceUUID) conn
       let [char] = serv ^. characteristics
       let Just handler = char ^. readValue
-      runBluetoothM handler conn `shouldReturn` Right "1797"
+      Right res <- runBluetoothM handler conn
+      res `shouldBe` BS.singleton 3
 
 getAllServicesSpec :: Spec
 getAllServicesSpec = describe "getAllServices" $ before connect $ do

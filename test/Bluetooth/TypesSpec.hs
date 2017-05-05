@@ -14,14 +14,12 @@ import Test.QuickCheck.Instances ()
 import qualified Data.Text as T
 
 import Bluetooth.Internal.Types
-import Bluetooth.Internal.Errors
 
 spec :: Spec
 spec = do
   uuidSpec
   parentPathSpec
   chrPropPairsSpec
-  charFromRepSpec
 
 uuidSpec :: Spec
 uuidSpec = describe "UUID" $ do
@@ -59,14 +57,6 @@ chrPropPairsSpec = describe "chrPropPairs" $ do
     let there = [ fromJust $ lookup d chrPropPairs  | d <- fst <$> chrPropPairs ]
     let back = [ fromJust $ lookup d (swap <$> chrPropPairs)   | d <- there ]
     back `shouldBe` fst <$> chrPropPairs
-
-
-charFromRepSpec :: Spec
-charFromRepSpec = describe "charFromRep" $ do
-
-  it "is a left inverse of toRep, modulo handlers" $ property
-    $ \(char :: Characteristic Handler Void) objpath ->
-      charFromRep (toRep (WOP objpath char)) `shouldBe` Just char
 
 
 -- * Utils

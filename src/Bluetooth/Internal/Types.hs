@@ -24,8 +24,8 @@ import DBus                   (ConnectionType (System), DBusConnection,
                                DBusSimpleType (..),
                                DBusType (DBusSimpleType, TypeDict, TypeVariant),
                                DBusValue (..), MethodError, Object, ObjectPath,
-                               Representable (..), connectBus, fromVariant,
-                               objectPath, objectRoot)
+                               Representable (..), connectBus, objectPath,
+                               objectRoot)
 import DBus.Types             (dBusConnectionName, root)
 import GHC.Exts               (IsList (..))
 import GHC.Generics           (Generic)
@@ -261,16 +261,6 @@ instance Representable (WithObjectPath (Characteristic m a)) where
                           ]
   fromRep = error "not implemented"
 
-charFromRep :: DBusValue AnyDBusDict -> Maybe (Characteristic m a)
-charFromRep dict' = do
-  dict :: Map.Map T.Text (DBusValue 'TypeVariant) <- fromRep dict'
-  let unmakeAny :: (Representable a) => DBusValue 'TypeVariant -> Maybe a
-      unmakeAny x = fromRep =<< fromVariant x
-  uuid' :: UUID <- unmakeAny =<< Map.lookup "UUID" dict
-  properties' <- unmakeAny =<< Map.lookup "Flags" dict
-  let char = Characteristic uuid' properties' Nothing Nothing
-  return char
-
 
 characteristicObjectPath :: ObjectPath -> Int -> ObjectPath
 characteristicObjectPath appOPath idx = appOPath & toText %~ addSuffix
@@ -313,14 +303,6 @@ instance Representable (WithObjectPath (Service m)) where
         = characteristicObjectPath (objectPath $ serv ^. path . toText) <$> [0..i-1]
 
   fromRep _ = error "not implemented"
-
-serviceFromRep :: DBusValue AnyDBusDict -> Maybe (Service m)
-serviceFromRep dict' = do
-  dict :: Map.Map T.Text (DBusValue 'TypeVariant) <- fromRep dict'
-  let unmakeAny :: (Representable a) => DBusValue 'TypeVariant -> Maybe a
-      unmakeAny x = fromRep =<< fromVariant x
-  uuid' :: UUID <- unmakeAny =<< Map.lookup "UUID" dict
-  return $ Service uuid' []
 
 -- * Application
 
