@@ -20,6 +20,7 @@ import Bluetooth.Internal.Errors
 import Bluetooth.Internal.Interfaces
 import Bluetooth.Internal.Types
 import Bluetooth.Internal.Utils
+import Bluetooth.Internal.Lenses
 
 -- The Bluez DBus API makes certain requirements about the interfaces
 -- that objects must meet. These requirements are outlined in:

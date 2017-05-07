@@ -1,4 +1,3 @@
-
 -- | This module exports all you should need to build a Bluetooth Low Energy
 --  (BLE) peripheral.
 --
@@ -118,6 +117,7 @@ import Bluetooth.Internal.DBus as X
 import Bluetooth.Internal.Types as X
 import Bluetooth.Internal.Serialize as X
 import Bluetooth.Internal.Errors as X
+import Bluetooth.Internal.Lenses as X
 
 import Lens.Micro
 import Lens.Micro.GHC

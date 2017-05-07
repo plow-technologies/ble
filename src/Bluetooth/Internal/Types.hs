@@ -42,6 +42,7 @@ import qualified System.Random   as Rand
 import Bluetooth.Internal.Errors
 import Bluetooth.Internal.Interfaces
 import Bluetooth.Internal.Utils
+import Bluetooth.Internal.Lenses
 
 -- | Append two Texts, keeping exactly one slash between them.
 (</>) :: T.Text -> T.Text -> T.Text
