@@ -1,17 +1,20 @@
-upcoming:
-
-  - description: Remove Bluetooth.Internal.Descriptors module
-    notes: The module was empty.
-    authors: jkarni
-    date: 2017-04-26
-
-  - description: Explicitly write and document lens classes.
-    notes: This helps us avoid a cabal bug.
-    authors: jkarni
-    pr: 12
-    date: 2017-05-07
+upcoming: []
 
 releases:
+
+  - version: "0.3.4.0"
+    changes:
+
+      - description: Remove Bluetooth.Internal.Descriptors module
+        notes: The module was empty.
+        authors: jkarni
+        date: 2017-04-26
+
+      - description: Explicitly write and document lens classes.
+        notes: This helps us avoid a cabal bug.
+        authors: jkarni
+        pr: 12
+        date: 2017-05-07
 
   - version: "0.3.3.0"
     changes:
