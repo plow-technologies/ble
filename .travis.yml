@@ -19,6 +19,7 @@ script:
   - stack setup --no-terminal
   - stack build --ghc-options=-Werror --no-terminal --flag ble:-hasBluez
   - stack test --ghc-options=-Werror --no-terminal  --flag ble:-hasBluez
+  - cmp README.md examples/README.lhs
 
 cache:
   directories:

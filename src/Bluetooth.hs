@@ -19,7 +19,7 @@
 -- All three have @IsString@ instances and lens field accessors.  The
 -- recommended way of using this library is by using the @OverloadedStrings@
 -- pragma and lenses. A complete example can be found
--- <https://github.com/plow-technologies/ble/blob/master/examples/Counter.hs here>.
+-- <https://github.com/plow-technologies/ble/blob/master/examples/README.lhs here>.
 --
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- > import Bluetooth

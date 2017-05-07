@@ -100,12 +100,14 @@ tests:
 #       - yaml == 0.8.*
 
 executables:
-  counter:
-    main:            Counter.hs
+  readme:
+    main:            README.lhs
     source-dirs:     examples
+    ghc-options:    -pgmL markdown-unlit
     dependencies:
       - ble
       - stm
+      - markdown-unlit
   hrs:
     main:            HeartRate.hs
     source-dirs:     examples

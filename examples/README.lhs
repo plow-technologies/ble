@@ -1,8 +1,21 @@
-module Main (main) where
+# ble - Bluetooth Low Energy for Haskell
 
--- A simple example of a complete Bluetooth Low Energy application. The
--- application allows a counter to be read, and adds one to the value of the
--- counter, as well as allowing the counter to be set to any value.
+*ble* is a Haskell library for writing Bluetooth Low Energy peripherals (and
+soon centrals).
+
+For usage, see the  [haddocks](https://hackage.haskell.org/package/ble). There
+are also examples in
+[`examples`](https://github.com/plow-technologies/ble/tree/master/examples)
+directory.
+
+## Example
+
+The code below is a simple example of a complete Bluetooth Low Energy
+application. The application allows a counter to be read, and adds one to the
+value of the counter, as well as allowing the counter to be set to any value.
+
+~~~ {.haskell}
+module Main (main) where
 
 import Bluetooth
 import Control.Concurrent     (threadDelay)
@@ -48,3 +61,13 @@ getCounter ref
       putStrLn $ "Value changed to: " ++ show i
       putStrLn $ "Old value: " ++ show v
       return True
+~~~
+
+## Requirements
+
+`ble` currently only supports Linux, and requires Bluez versions 5.41 and up.
+To see what version you are running, type:
+
+``` bash
+bluetoothd --version
+```
