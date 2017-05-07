@@ -88,7 +88,7 @@ tests:
     dependencies:
       - ble
       - hspec > 2 && < 3
-      - QuickCheck >= 2.8 && < 2.9
+      - QuickCheck >= 2.8 && < 2.10
       - quickcheck-instances >= 0.3 && < 0.4
       - hslogger
 #   doctest:
@@ -100,12 +100,14 @@ tests:
 #       - yaml == 0.8.*
 
 executables:
-  counter:
-    main:            Counter.hs
+  readme:
+    main:            README.lhs
     source-dirs:     examples
+    ghc-options:    -pgmL markdown-unlit
     dependencies:
       - ble
       - stm
+      - markdown-unlit
   hrs:
     main:            HeartRate.hs
     source-dirs:     examples

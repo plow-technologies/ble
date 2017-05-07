@@ -16,6 +16,7 @@ import Bluetooth.Internal.Interfaces
 import Bluetooth.Internal.Types
 import Bluetooth.Internal.Utils
 import Bluetooth.Internal.Errors
+import Bluetooth.Internal.Lenses
 
 -- | Registers an application and advertises it. If you would like to have
 -- finer-grained control of the advertisement, use @registerApplication@ and

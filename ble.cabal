@@ -1,4 +1,4 @@
--- This file has been generated from package.yaml by hpack version 0.15.0.
+-- This file has been generated from package.yaml by hpack version 0.17.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -65,6 +65,7 @@ library
       Bluetooth.Internal.Errors
       Bluetooth.Internal.HasInterface
       Bluetooth.Internal.Interfaces
+      Bluetooth.Internal.Lenses
       Bluetooth.Internal.Serialize
       Bluetooth.Internal.Types
       Bluetooth.Internal.Utils
@@ -95,38 +96,8 @@ executable auth
   if flag(hasBluez)
     cpp-options: -DBluez
   other-modules:
-      Counter
       HeartRate
-  default-language: Haskell2010
-
-executable counter
-  main-is: Counter.hs
-  hs-source-dirs:
-      examples
-  default-extensions: AutoDeriveTypeable ConstraintKinds DataKinds DefaultSignatures DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable FlexibleContexts FlexibleInstances FunctionalDependencies GADTs KindSignatures MultiParamTypeClasses OverloadedStrings RankNTypes ScopedTypeVariables TypeFamilies TypeOperators
-  ghc-options: -Wall
-  build-depends:
-      base >= 4.8 && < 4.10
-    , bytestring >= 0.10 && < 0.11
-    , text >= 1 && < 2
-    , d-bus >= 0.1.5 && < 0.2
-    , uuid >= 1 && < 2
-    , mtl >= 2.2 && < 2.3
-    , transformers >= 0.4 && < 0.6
-    , containers >= 0.5 && < 0.6
-    , random >= 1 && < 2
-    , microlens >= 0.4 && < 0.5
-    , microlens-th >= 0.4 && < 0.5
-    , microlens-ghc >= 0.4 && < 0.5
-    , cereal >= 0.4 && < 0.6
-    , data-default-class >= 0.0 && < 0.2
-    , ble
-    , stm
-  if flag(hasBluez)
-    cpp-options: -DBluez
-  other-modules:
-      Auth
-      HeartRate
+      README
   default-language: Haskell2010
 
 executable hrs
@@ -156,7 +127,38 @@ executable hrs
     cpp-options: -DBluez
   other-modules:
       Auth
-      Counter
+      README
+  default-language: Haskell2010
+
+executable readme
+  main-is: README.lhs
+  hs-source-dirs:
+      examples
+  default-extensions: AutoDeriveTypeable ConstraintKinds DataKinds DefaultSignatures DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable FlexibleContexts FlexibleInstances FunctionalDependencies GADTs KindSignatures MultiParamTypeClasses OverloadedStrings RankNTypes ScopedTypeVariables TypeFamilies TypeOperators
+  ghc-options: -Wall -pgmL markdown-unlit
+  build-depends:
+      base >= 4.8 && < 4.10
+    , bytestring >= 0.10 && < 0.11
+    , text >= 1 && < 2
+    , d-bus >= 0.1.5 && < 0.2
+    , uuid >= 1 && < 2
+    , mtl >= 2.2 && < 2.3
+    , transformers >= 0.4 && < 0.6
+    , containers >= 0.5 && < 0.6
+    , random >= 1 && < 2
+    , microlens >= 0.4 && < 0.5
+    , microlens-th >= 0.4 && < 0.5
+    , microlens-ghc >= 0.4 && < 0.5
+    , cereal >= 0.4 && < 0.6
+    , data-default-class >= 0.0 && < 0.2
+    , ble
+    , stm
+    , markdown-unlit
+  if flag(hasBluez)
+    cpp-options: -DBluez
+  other-modules:
+      Auth
+      HeartRate
   default-language: Haskell2010
 
 test-suite spec
@@ -183,7 +185,7 @@ test-suite spec
     , data-default-class >= 0.0 && < 0.2
     , ble
     , hspec > 2 && < 3
-    , QuickCheck >= 2.8 && < 2.9
+    , QuickCheck >= 2.8 && < 2.10
     , quickcheck-instances >= 0.3 && < 0.4
     , hslogger
   if flag(hasBluez)

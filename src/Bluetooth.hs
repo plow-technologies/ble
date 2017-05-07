@@ -1,4 +1,3 @@
-
 -- | This module exports all you should need to build a Bluetooth Low Energy
 --  (BLE) peripheral.
 --
@@ -20,7 +19,7 @@
 -- All three have @IsString@ instances and lens field accessors.  The
 -- recommended way of using this library is by using the @OverloadedStrings@
 -- pragma and lenses. A complete example can be found
--- <https://github.com/plow-technologies/ble/blob/master/examples/Counter.hs here>.
+-- <https://github.com/plow-technologies/ble/blob/master/examples/README.lhs here>.
 --
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- > import Bluetooth
@@ -118,6 +117,7 @@ import Bluetooth.Internal.DBus as X
 import Bluetooth.Internal.Types as X
 import Bluetooth.Internal.Serialize as X
 import Bluetooth.Internal.Errors as X
+import Bluetooth.Internal.Lenses as X
 
 import Lens.Micro
 import Lens.Micro.GHC
