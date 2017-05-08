@@ -4,8 +4,11 @@ dist: trusty
 python: "3.4"
 
 env:
-  - STACK_YAML=stack.yaml
-  - STACK_YAML=stack-7.10.yaml
+  global:
+    - BLE_TEST_LOG_FILE=test.log
+  matrix:
+    - STACK_YAML=stack.yaml BLE_TEST_LOG_FILE=test.log
+    - STACK_YAML=stack-7.10.yaml BLE_TEST_LOG_FILE=test.log
 
 addons:
   apt:
@@ -25,7 +28,8 @@ install:
 script:
   - stack setup --no-terminal
   - stack build --ghc-options=-Werror --no-terminal --flag ble:-hasBluez --flag ble:hasDBus
-  - stack test --ghc-options=-Werror --no-terminal  --flag ble:-hasBluez --flag ble:hasDBus
+  - touch test.log
+  - stack test --ghc-options=-Werror --no-terminal  --flag ble:-hasBluez --flag ble:hasDBus || cat "$BLE_TEST_LOG_FILE" && exit 1
   - cmp README.md examples/README.lhs
 
 cache:
