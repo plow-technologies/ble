@@ -14,6 +14,7 @@ import Test.QuickCheck.Instances ()
 import qualified Data.Text as T
 
 import Bluetooth.Internal.Types
+import Bluetooth.Internal.Lenses
 
 spec :: Spec
 spec = do

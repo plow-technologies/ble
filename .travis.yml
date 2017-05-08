@@ -10,7 +10,7 @@ env:
 addons:
   apt:
     packages:
-      - libgmp-dev
+      - libgmp-dev libdbus-1-dev libdbus-glib-1-dev
       - python3-dbus python3-gi python3-pip
 
 install:

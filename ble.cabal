@@ -107,6 +107,7 @@ executable auth
   other-modules:
       HeartRate
       HeartRateClient
+      README
   default-language: Haskell2010
 
 executable hrs
@@ -137,6 +138,7 @@ executable hrs
   other-modules:
       Auth
       HeartRateClient
+      README
   default-language: Haskell2010
 
 executable readme
