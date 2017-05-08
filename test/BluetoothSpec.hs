@@ -123,12 +123,15 @@ getServiceSpec = describe "getService" $ before connect $ do
       Right res <- runBluetoothM handler conn
       res `shouldBe` BS.singleton 3
 
-    it "has characteristics that can be written" $ \conn -> withAService $ do
-      Right (Just serv) <- runBluetoothM (getService mockServiceUUID) conn
-      let [char] = serv ^. characteristics
-      let Just handler = char ^. writeValue
-      Right res <- runBluetoothM handler conn
-      res `shouldBe` BS.singleton 3
+    {-it "has characteristics that can be written" $ \conn -> withAService $ do-}
+      {-Right (Just serv) <- runBluetoothM (getService mockServiceUUID) conn-}
+      {-let [char] = serv ^. characteristics-}
+      {-let Just whandler = char ^. writeValue-}
+          {-Just rhandler = char ^. readValue-}
+      {-Right writeResult <- runBluetoothM (whandler $ BS.singleton 10)  conn-}
+      {-writeResult `shouldBe` True-}
+      {-Right readResult <- runBluetoothM rhandler conn-}
+      {-readResult `shouldBe` BS.singleton 10-}
 
 getAllServicesSpec :: Spec
 getAllServicesSpec = describe "getAllServices" $ before connect $ do
