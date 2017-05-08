@@ -107,7 +107,6 @@ executable auth
   other-modules:
       HeartRate
       HeartRateClient
-      README
   default-language: Haskell2010
 
 executable hrs
@@ -133,15 +132,10 @@ executable hrs
     , data-default-class >= 0.0 && < 0.2
     , ble
     , hslogger
-    , stm
-  if flag(hasBluez)
-    cpp-options: -DBluez
   if flag(hasDBus)
     cpp-options: -DDBusMock
   other-modules:
       Auth
-      README
-      HeartRate
       HeartRateClient
   default-language: Haskell2010
 
@@ -169,16 +163,12 @@ executable readme
     , ble
     , stm
     , markdown-unlit
-    , hslogger
-  if flag(hasBluez)
-    cpp-options: -DBluez
   if flag(hasDBus)
     cpp-options: -DDBusMock
   other-modules:
       Auth
       HeartRate
       HeartRateClient
-      Counter
   default-language: Haskell2010
 
 test-suite spec

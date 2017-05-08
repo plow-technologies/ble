@@ -17,7 +17,6 @@ import Bluetooth.Internal.HasInterface
 import Bluetooth.Internal.Interfaces
 import Bluetooth.Internal.Types
 import Bluetooth.Internal.Utils
-import Bluetooth.Internal.Errors
 import Bluetooth.Internal.Lenses
 
 
