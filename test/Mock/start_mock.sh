@@ -22,32 +22,32 @@ done
 # echo "Logging to $LOG_TO"
 
 python3 -m dbusmock --system org.bluez.Mock / org.bluez \
-   > "$LOG_TO" 2>&1 &
+   >> "$LOG_TO" 2>&1 &
 
 sleep 5
 trap 'kill $(jobs -p)' EXIT
 
 gdbus call --system -d org.bluez.Mock -o / \
   -m org.freedesktop.DBus.Mock.AddTemplate 'bluez5' '{}' \
-  > "$LOG_TO" 2>&1
+  >> "$LOG_TO" 2>&1
 
 gdbus call --system -d org.bluez.Mock -o / \
   -m org.bluez.Mock.AddAdapter \
   'hci0' \
-  'computer' > "$LOG_TO" 2>&1
+  'computer' >> "$LOG_TO" 2>&1
 
 gdbus call --system -d org.bluez.Mock -o / \
   -m org.bluez.Mock.AddDevice \
   'hci0' \
   '11:22:33:44:55:66' \
-  'Test Device' > "$LOG_TO" 2>&1
+  'Test Device' >> "$LOG_TO" 2>&1
 
 gdbus call --system -d org.bluez.Mock -o / \
   -m org.bluez.Mock.AddGATTService \
   '/org/bluez/hci0' \
   '1' \
   "$SERVICE_UUID" \
-  'true' > "$LOG_TO" 2>&1
+  'true' >> "$LOG_TO" 2>&1
 
 gdbus call --system -d org.bluez.Mock -o / \
   -m org.bluez.Mock.AddGATTCharacteristic \
@@ -56,7 +56,7 @@ gdbus call --system -d org.bluez.Mock -o / \
   "$CHARACTERISTIC_UUID" \
   '["read"]' \
   "$CHARACTERISTIC_VALUE" \
-  'false' > "$LOG_TO" 2>&1
+  'false' >> "$LOG_TO" 2>&1
 
 printf "ready\n"
 

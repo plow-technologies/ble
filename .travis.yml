@@ -1,29 +1,33 @@
 sudo: required
 dist: trusty
+language: python
+python:
+  - "3.4"
 
-python: "3.4"
+virtualenv:
+  system_site_packages: true
 
 env:
   global:
     - BLE_TEST_LOG_FILE=test.log
+    - PACKAGES="libgmp-dev libdbus-1-dev libdbus-glib-1-dev python3-dbus python3-gi python3-pip"
   matrix:
     - STACK_YAML=stack.yaml BLE_TEST_LOG_FILE=test.log
     - STACK_YAML=stack-7.10.yaml BLE_TEST_LOG_FILE=test.log
 
-addons:
-  apt:
-    packages:
-      - libgmp-dev libdbus-1-dev libdbus-glib-1-dev
-      - python3-dbus python3-gi python3-pip
-
 install:
+  # apt
+  - sudo apt-get update -q
+  - sudo apt-get install -y $PACKAGES
   # stack
   - mkdir -p ~/.local/bin
   - export PATH=~/.local/bin:$PATH
   - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
   - stack --version
   # python reqs
-  - pip3 install --user -r test/Mock/requirements.txt
+  - pip install --upgrade pip
+  - pip freeze
+  - pip install -r test/Mock/requirements.txt
 
 script:
   - stack setup --no-terminal
