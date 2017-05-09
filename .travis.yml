@@ -16,6 +16,8 @@ env:
     - STACK_YAML=stack-7.10.yaml BLE_TEST_LOG_FILE=test.log
 
 install:
+  # dbus permissiongs - *before* installing dbus
+  - sudo ./test/Mock/dbus-permissions.sh
   # apt
   - sudo apt-get update -q
   - sudo apt-get install -y $PACKAGES
@@ -28,8 +30,6 @@ install:
   - pip install --upgrade pip
   - pip freeze
   - pip install -r test/Mock/requirements.txt
-  # dbus permissiongs
-  - sudo ./test/Mock/dbus-permissions.sh
 
 script:
   - stack setup --no-terminal
