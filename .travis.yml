@@ -28,6 +28,8 @@ install:
   - pip install --upgrade pip
   - pip freeze
   - pip install -r test/Mock/requirements.txt
+  # dbus permissiongs
+  - sudo ./test/Mock/dbus-permissions.sh
 
 script:
   - stack setup --no-terminal
@@ -40,3 +42,4 @@ cache:
   directories:
     - $HOME/.stack
     - $HOME/.pip
+    - /etc/dbus-1
