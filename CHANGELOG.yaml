@@ -1,5 +1,19 @@
 upcoming: []
 
+  - description: Add 'getService' and 'getAllServices'
+    authors: jkarni
+    pr: 13
+    date: 2017-05-10
+
+  - description: Parametrize 'Service' and 'Characteristic' by handler monad
+    notes: |
+        This is a backwards-incompatible change. Previous uses of 'Service' and
+        'Characteristic' should be replaced with 'Service Handler' and
+        'Characteristic Handler', respectively,
+    authors: jkarni
+    pr: 13
+    date: 2017-05-10
+
 releases:
 
   - version: "0.3.4.0"

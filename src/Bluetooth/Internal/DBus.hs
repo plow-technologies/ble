@@ -149,6 +149,13 @@ getAllServices = do
 
   where
 
+    readProps :: [CharacteristicProperty]
+    readProps = [CPRead, CPEncryptRead, CPEncryptAuthenticatedRead]
+
+    writeProps :: [CharacteristicProperty]
+    writeProps = [ CPWrite, CPWriteWithoutResponse, CPEncryptWrite
+                 , CPEncryptAuthenticatedRead, CPAuthenticatedSignedWrites]
+
     charFromRep :: ObjectPath -> DBusValue AnyDBusDict
       -> Maybe (CharacteristicBS BluetoothM)
     charFromRep charPath dict' = do
@@ -157,11 +164,15 @@ getAllServices = do
           unmakeAny x = fromRep =<< fromVariant x
       uuid' :: UUID <- unmakeAny =<< Map.lookup "UUID" dict
       properties' <- unmakeAny =<< Map.lookup "Flags" dict
-      let mrv = if CPRead `elem` properties'
+      let mrv = if any (`elem` readProps) properties'
             then Just $
               callMethodBM charPath gattCharacteristicIFace "ReadValue" ()
             else Nothing
-      let char = Characteristic uuid' properties' mrv Nothing
+      let mwv = if any (`elem` writeProps) properties'
+            then Just $
+              callMethodBM charPath gattCharacteristicIFace "WriteValue"
+            else Nothing
+      let char = Characteristic uuid' properties' mrv mwv
       return char
 
     mkChar :: ObjectPath -> BluetoothM (CharacteristicBS BluetoothM)

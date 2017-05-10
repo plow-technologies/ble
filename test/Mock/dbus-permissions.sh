@@ -5,7 +5,6 @@ cat << EOF > /etc/dbus-1/system-local.conf
 <busconfig>
   <policy user="*">
   <allow own="org.bluez.Mock"/>
-  <allow own="org.bluez"/>
   <allow send_destination="org.bluez.Mock"/>
   </policy>
 </busconfig>

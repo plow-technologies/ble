@@ -71,3 +71,30 @@ To see what version you are running, type:
 ``` bash
 bluetoothd --version
 ```
+
+### Contributing
+
+Note that quite a number of tests are protected by a flag (`hasDBus`). This is
+in part because of extra system dependencies; and in part because the tests
+require mocking DBus objects, which in turn require changing the dbus
+configuration files.
+
+If you are contributing to this packages, you *should* run all tests (and
+possibly write further ones utilizing the mock infrastructure). You'll need to
+run:
+
+``` bash
+sudo ./test/Mock/dbus-permissions.sh
+```
+
+And then reboot (yes, terrible, but DBus has trouble reloading its
+configuration).
+
+You then need the python dependencies. Minimally, this will involve:
+
+``` bash
+pip install -r test/Mock/requirements.txt
+```
+
+`stack.yaml` has the `hasDBus` flag set, so if you're using `stack` you'll by
+default be running all the tests.

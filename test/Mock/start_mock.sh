@@ -54,7 +54,7 @@ gdbus call --system -d org.bluez.Mock -o / \
   "/org/bluez/hci0/service0001" \
   '1' \
   "$CHARACTERISTIC_UUID" \
-  '["read"]' \
+  '["read", "write"]' \
   "$CHARACTERISTIC_VALUE" \
   'false' >> "$LOG_TO" 2>&1
 

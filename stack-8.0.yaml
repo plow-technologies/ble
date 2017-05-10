@@ -1,6 +1,4 @@
-flags:
-  ble:
-    hasDBus: true
+flags: {}
 extra-package-dbs: []
 packages:
 - '.'
