@@ -62,7 +62,6 @@ library
     , containers >= 0.5 && < 0.6
     , random >= 1 && < 2
     , microlens >= 0.4 && < 0.5
-    , microlens-th >= 0.4 && < 0.5
     , microlens-ghc >= 0.4 && < 0.5
     , cereal >= 0.4 && < 0.6
     , data-default-class >= 0.0 && < 0.2
@@ -97,7 +96,6 @@ executable auth
     , containers >= 0.5 && < 0.6
     , random >= 1 && < 2
     , microlens >= 0.4 && < 0.5
-    , microlens-th >= 0.4 && < 0.5
     , microlens-ghc >= 0.4 && < 0.5
     , cereal >= 0.4 && < 0.6
     , data-default-class >= 0.0 && < 0.2
@@ -127,7 +125,6 @@ executable hrs
     , containers >= 0.5 && < 0.6
     , random >= 1 && < 2
     , microlens >= 0.4 && < 0.5
-    , microlens-th >= 0.4 && < 0.5
     , microlens-ghc >= 0.4 && < 0.5
     , cereal >= 0.4 && < 0.6
     , data-default-class >= 0.0 && < 0.2
@@ -158,7 +155,6 @@ executable readme
     , containers >= 0.5 && < 0.6
     , random >= 1 && < 2
     , microlens >= 0.4 && < 0.5
-    , microlens-th >= 0.4 && < 0.5
     , microlens-ghc >= 0.4 && < 0.5
     , cereal >= 0.4 && < 0.6
     , data-default-class >= 0.0 && < 0.2
@@ -191,7 +187,6 @@ test-suite spec
     , containers >= 0.5 && < 0.6
     , random >= 1 && < 2
     , microlens >= 0.4 && < 0.5
-    , microlens-th >= 0.4 && < 0.5
     , microlens-ghc >= 0.4 && < 0.5
     , cereal >= 0.4 && < 0.6
     , data-default-class >= 0.0 && < 0.2

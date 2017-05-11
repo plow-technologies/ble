@@ -3,6 +3,7 @@
 {-# LANGUAGE StandaloneDeriving         #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE UndecidableInstances       #-}
+{-# OPTIONS_GHC -ddump-splices   #-}
 #if !MIN_VERSION_base(4,9,0)
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 #endif
@@ -30,7 +31,6 @@ import DBus.Types             (dBusConnectionName, root)
 import GHC.Exts               (IsList (..))
 import GHC.Generics           (Generic)
 import Lens.Micro
-import Lens.Micro.TH          (makeFields)
 import System.IO.Unsafe       (unsafePerformIO)
 
 import qualified Data.ByteString as BS
@@ -57,6 +57,21 @@ parentPath p = case reverse $ T.splitOn "/" p of
   _:xs -> T.intercalate "/" $ reverse xs
   []   -> "/"
 
+-- * Place
+
+-- | Whether a service/characteristic is running on this computer (`Local`) or
+-- another (`Remote`). If `Local`, we're acting as a peripheral; otherwise, as
+-- a central.
+data Location = Local | Remote
+  deriving (Eq, Show, Read, Generic)
+
+{-
+-- This should actually be a closed type family, but because TemplateHaskell
+-- insists on things being defined in a specific order, we make it open an
+-- define instances later
+type family HandlerType (loc :: Location) (v :: *) :: * where
+    Handler
+-}
 
 -- * UUID
 
@@ -123,7 +138,14 @@ data WithObjectPath a = WOP
   , withObjectPathValue :: a
   } deriving (Eq, Show, Generic, Functor)
 
-makeFields ''WithObjectPath
+instance HasPath (WithObjectPath a) ObjectPath where
+  {-# INLINE path #-}
+  path f (WOP p v)
+    = fmap (\y -> WOP y v) (f p)
+instance HasValue (WithObjectPath a) a where
+  {-# INLINE value #-}
+  value f (WOP p v)
+    = fmap (\ y -> WOP p y) (f v)
 
 data DontCareFromRep = DontCareFromRep
   deriving (Eq, Show, Read, Generic)
@@ -193,7 +215,10 @@ data CharacteristicOptions = CharacteristicOptions
   { characteristicOptionsOffset :: Maybe Word16
   } deriving (Eq, Show, Read, Generic)
 
-makeFields ''CharacteristicOptions
+instance HasOffset CharacteristicOptions (Maybe Word16) where
+  {-# INLINE offset #-}
+  offset f (CharacteristicOptions x)
+    = fmap (\ y -> CharacteristicOptions y) (f x)
 
 instance Representable CharacteristicOptions where
   type RepType CharacteristicOptions = AnyDBusDict
@@ -208,16 +233,34 @@ instance Representable CharacteristicOptions where
 
 type CharacteristicBS m = Characteristic m BS.ByteString
 
-data Characteristic m typ = Characteristic
+data Characteristic h typ = Characteristic
   { characteristicUuid       :: UUID
   , characteristicProperties :: [CharacteristicProperty]
-  , characteristicReadValue  :: Maybe (m typ)
+  , characteristicReadValue  :: Maybe (h typ)
   -- | Write a value. Note that the value is only writeable externally if the
   -- characteristic contains the CPWrite property *and* this is a Just.
-  , characteristicWriteValue :: Maybe (typ -> m Bool)
+  , characteristicWriteValue :: Maybe (typ -> (h Bool))
   } deriving (Generic)
 
-makeFields ''Characteristic
+instance HasProperties (Characteristic m v) [CharacteristicProperty] where
+  {-# INLINE properties #-}
+  properties f (Characteristic u p rv wv)
+    = fmap (\ y -> Characteristic u y rv wv) (f p)
+
+instance HasReadValue (Characteristic m v) (Maybe (m v)) where
+  {-# INLINE readValue #-}
+  readValue f (Characteristic u p rv wv)
+    = fmap (\ y -> Characteristic u p y wv) (f rv)
+
+instance HasUuid (Characteristic m v) UUID where
+  {-# INLINE uuid #-}
+  uuid f (Characteristic u p rv wv)
+    = fmap (\ y -> Characteristic y p rv wv) (f u)
+
+instance HasWriteValue (Characteristic m v) (Maybe (v -> m Bool)) where
+  {-# INLINE writeValue #-}
+  writeValue f (Characteristic u p rv wv)
+    = fmap (\ y -> Characteristic u p rv y) (f wv)
 
 
 -- This is essentialy the unsafePerformIO memoization trick
@@ -280,7 +323,15 @@ data Service m = Service
   , serviceCharacteristics :: [CharacteristicBS m]
   } deriving (Generic)
 
-makeFields ''Service
+instance HasCharacteristics (Service m) [CharacteristicBS m] where
+  {-# INLINE characteristics #-}
+  characteristics f (Service u c)
+    = fmap (\ y -> Service u y) (f c)
+
+instance HasUuid (Service m) UUID where
+  {-# INLINE uuid #-}
+  uuid f (Service u c)
+    = fmap (\ y -> Service y c) (f u)
 
 instance IsString (Service m) where
   fromString x = Service (fromString x) []
@@ -314,7 +365,16 @@ data Application = Application
   , applicationServices :: [Service Handler]
   } deriving (Generic)
 
-makeFields ''Application
+
+instance HasPath Application ObjectPath where
+  {-# INLINE path #-}
+  path f (Application p s)
+    = fmap (\ y -> Application y s) (f p)
+
+instance HasServices Application [Service Handler] where
+  {-# INLINE services #-}
+  services f (Application p s)
+    = fmap (\ y -> Application p y) (f s)
 
 instance IsString Application where
   fromString x = Application (fromString x) []
@@ -374,7 +434,48 @@ data Advertisement = Advertisement
   , advertisementIncludeTxPower   :: Bool
   } deriving (Eq, Show, Generic)
 
-makeFields ''Advertisement
+instance HasIncludeTxPower Advertisement Bool where
+  {-# INLINE includeTxPower #-}
+  includeTxPower
+    fn
+    (Advertisement a b c d e f)
+    = fmap (\ y -> Advertisement a b c d e y) (fn f)
+
+instance HasManufacturerData Advertisement (Map.Map Word16 BS.ByteString) where
+  {-# INLINE manufacturerData #-}
+  manufacturerData
+    fn
+    (Advertisement a b c d e f)
+    = fmap (\ y -> Advertisement a b c y e f) (fn d)
+
+instance HasServiceData Advertisement (Map.Map UUID BS.ByteString) where
+  {-# INLINE serviceData #-}
+  serviceData
+    fn
+    (Advertisement a b c d e f)
+    = fmap (\ y -> Advertisement a b c d y f) (fn e)
+
+instance HasServiceUUIDs Advertisement [UUID] where
+  {-# INLINE serviceUUIDs #-}
+  serviceUUIDs
+    fn
+    (Advertisement a b c d e f)
+    = fmap (\ y -> Advertisement a y c d e f) (fn b)
+
+instance HasSolicitUUIDs Advertisement [UUID] where
+  {-# INLINE solicitUUIDs #-}
+  solicitUUIDs
+    fn
+    (Advertisement a b c d e f)
+    = fmap
+        (\ y -> Advertisement a b y d e f) (fn c)
+
+instance HasType_ Advertisement AdvertisementType where
+  {-# INLINE type_ #-}
+  type_
+    fn
+    (Advertisement a b c d e f)
+    = fmap (\ y -> Advertisement y b c d e f) (fn a)
 
 instance IsList Advertisement where
   type Item Advertisement = UUID
@@ -477,6 +578,7 @@ data Status
   = Success
   | Failure
   deriving (Eq, Show, Read, Ord, Enum, Generic)
+
 
 {- Note [WithObjectPath]
 ~~~~~~~~~~~~~~~~~~~~~~~~~

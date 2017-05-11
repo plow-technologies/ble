@@ -2,10 +2,11 @@ module Bluetooth.Internal.DBus where
 
 import Control.Monad.Except
 import Control.Monad.Reader
-import Data.IORef           (IORef, readIORef, writeIORef, newIORef)
+import Data.IORef           (IORef, newIORef, readIORef, writeIORef)
 import Data.Monoid          ((<>))
 import DBus
 import DBus.Signal          (execSignalT)
+import DBus.Types           (ArgParity, Parity (Arg, Null))
 import Lens.Micro
 import System.IO.Unsafe     (unsafePerformIO)
 
@@ -15,9 +16,9 @@ import qualified Data.Text as T
 import Bluetooth.Internal.Errors
 import Bluetooth.Internal.HasInterface
 import Bluetooth.Internal.Interfaces
+import Bluetooth.Internal.Lenses
 import Bluetooth.Internal.Types
 import Bluetooth.Internal.Utils
-import Bluetooth.Internal.Lenses
 
 
 -- | Registers an application and advertises it. If you would like to have
@@ -202,6 +203,26 @@ getAllServices = do
           "Bluez returned invalid service"
         Just serv -> return $ serv & characteristics .~ chars
 
+-- | Starts notifications on the remote (peripheral), handling it with the
+-- provided callback.
+startNotify :: forall a. (Representable a
+  , ArgParity (FlattenRepType (RepType a)) ~ 'Arg 'Null)
+  => Characteristic BluetoothM a -> (a -> IO ()) -> BluetoothM ()
+startNotify _char handler = do
+  conn <- dbusConn <$> ask
+  liftIO $ handleSignal sigDesc Nothing matchAll handler conn
+  where
+    {-sigDesc :: SignalDescription (FlattenRepType (RepType a))-}
+    sigDesc = SignalDescription
+      { signalDPath = "/"
+      , signalDInterface = T.pack gattCharacteristicIFace
+      , signalDMember = "StartNotify"
+      , signalDArguments = "input" :> Done
+      }
+
+-- | Stop notifications on the remote (peripheral).
+{-stopNotify :: Characteristic BluetoothM a -> BluetoothM ()-}
+{-stopNotify = _-}
 
 -- * Constants
 
