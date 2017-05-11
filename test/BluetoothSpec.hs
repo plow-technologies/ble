@@ -147,12 +147,12 @@ testApp
   = "/com/turingjump/test"
       & services .~ [testService]
 
-testService :: Service Handler
+testService :: Service 'Local
 testService
   = "351930f8-7d31-43c1-92f5-fd2f0eac272f"
       & characteristics .~ [testCharacteristic]
 
-testCharacteristic :: CharacteristicBS Handler
+testCharacteristic :: CharacteristicBS 'Local
 testCharacteristic
   = "cdcb58aa-7e4c-4d22-b0bf-a90cd67ba60b"
       & readValue ?~ encodeRead go

@@ -131,3 +131,8 @@ executables:
     source-dirs:     examples
     dependencies:
       - ble
+  hrs-client:
+    main:            HeartRateClient.hs
+    source-dirs:     examples
+    dependencies:
+      - ble

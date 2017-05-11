@@ -37,12 +37,12 @@ app ref
   = "/com/turingjump/example/counter"
      & services .~ [counter ref]
 
-counter :: TVar Int -> Service Handler
+counter :: TVar Int -> Service 'Local
 counter ref
   = "4f1f704f-0a0b-49e4-bd27-6368f27697a7"
      & characteristics .~ [getCounter ref]
 
-getCounter :: TVar Int -> CharacteristicBS Handler
+getCounter :: TVar Int -> CharacteristicBS 'Local
 getCounter ref
   = "90874979-563e-4224-9da6-3b1a6c03e97d"
       & readValue  ?~ encodeRead readV

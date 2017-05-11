@@ -65,14 +65,6 @@ parentPath p = case reverse $ T.splitOn "/" p of
 data Location = Local | Remote
   deriving (Eq, Show, Read, Generic)
 
-{-
--- This should actually be a closed type family, but because TemplateHaskell
--- insists on things being defined in a specific order, we make it open an
--- define instances later
-type family HandlerType (loc :: Location) (v :: *) :: * where
-    Handler
--}
-
 -- * UUID
 
 -- | UUIDs, used for services and characteristics.
@@ -233,35 +225,59 @@ instance Representable CharacteristicOptions where
 
 type CharacteristicBS m = Characteristic m BS.ByteString
 
-data Characteristic h typ = Characteristic
-  { characteristicUuid       :: UUID
-  , characteristicProperties :: [CharacteristicProperty]
-  , characteristicReadValue  :: Maybe (h typ)
-  -- | Write a value. Note that the value is only writeable externally if the
-  -- characteristic contains the CPWrite property *and* this is a Just.
-  , characteristicWriteValue :: Maybe (typ -> (h Bool))
-  } deriving (Generic)
+data Characteristic (loc :: Location) typ where
+  LocalChar ::
+    { characteristicLUuid       :: UUID
+    , characteristicLProperties :: [CharacteristicProperty]
+    , characteristicLReadValue  :: Maybe (Handler typ)
+    , characteristicLWriteValue :: Maybe (typ -> Handler Bool)
+    } -> Characteristic 'Local typ
+  RemoteChar ::
+    { characteristicRUuid       :: UUID
+    , characteristicRProperties :: [CharacteristicProperty]
+    , characteristicRReadValue  :: Maybe (BluetoothM typ)
+    , characteristicRWriteValue :: Maybe (typ -> BluetoothM Bool)
+    , characteristicRPath       :: ObjectPath
+    } -> Characteristic 'Remote typ
 
 instance HasProperties (Characteristic m v) [CharacteristicProperty] where
   {-# INLINE properties #-}
-  properties f (Characteristic u p rv wv)
-    = fmap (\ y -> Characteristic u y rv wv) (f p)
+  properties f (LocalChar u p rv wv)
+    = fmap (\ y -> LocalChar u y rv wv) (f p)
+  properties f (RemoteChar u p rv wv p')
+    = fmap (\ y -> RemoteChar u y rv wv p') (f p)
 
-instance HasReadValue (Characteristic m v) (Maybe (m v)) where
+instance HasReadValue (Characteristic 'Local v) (Maybe (Handler v)) where
   {-# INLINE readValue #-}
-  readValue f (Characteristic u p rv wv)
-    = fmap (\ y -> Characteristic u p y wv) (f rv)
+  readValue f (LocalChar u p rv wv)
+    = fmap (\ y -> LocalChar u p y wv) (f rv)
+
+instance HasReadValue (Characteristic 'Remote v) (Maybe (BluetoothM v)) where
+  {-# INLINE readValue #-}
+  readValue f (RemoteChar u p rv wv p')
+    = fmap (\ y -> RemoteChar u p y wv p') (f rv)
 
 instance HasUuid (Characteristic m v) UUID where
   {-# INLINE uuid #-}
-  uuid f (Characteristic u p rv wv)
-    = fmap (\ y -> Characteristic y p rv wv) (f u)
+  uuid f (LocalChar u p rv wv)
+    = fmap (\ y -> LocalChar y p rv wv) (f u)
+  uuid f (RemoteChar u p rv wv p')
+    = fmap (\ y -> RemoteChar y p rv wv p') (f u)
 
-instance HasWriteValue (Characteristic m v) (Maybe (v -> m Bool)) where
+instance HasWriteValue (Characteristic 'Local v) (Maybe (v -> Handler Bool)) where
   {-# INLINE writeValue #-}
-  writeValue f (Characteristic u p rv wv)
-    = fmap (\ y -> Characteristic u p rv y) (f wv)
+  writeValue f (LocalChar u p rv wv)
+    = fmap (\ y -> LocalChar u p rv y) (f wv)
 
+instance HasWriteValue (Characteristic 'Remote v) (Maybe (v -> BluetoothM Bool)) where
+  {-# INLINE writeValue #-}
+  writeValue f (RemoteChar u p rv wv p')
+    = fmap (\ y -> RemoteChar u p rv y p') (f wv)
+
+instance HasPath (Characteristic 'Remote v) ObjectPath where
+  {-# INLINE path #-}
+  path f (RemoteChar u p rv wv p')
+    = fmap (\ y -> RemoteChar u p rv wv y) (f p')
 
 -- This is essentialy the unsafePerformIO memoization trick
 characteristicIsNotifying :: UUID -> MVar Bool
@@ -289,8 +305,8 @@ objectPathOf = unsafePerformIO $ do
       Just v  -> return (curMap, v)
 {-# NOINLINE objectPathOf #-}
 
-instance IsString (Characteristic m a) where
-  fromString x = Characteristic (fromString x) [] Nothing Nothing
+instance IsString (Characteristic 'Local a) where
+  fromString x = LocalChar (fromString x) [] Nothing Nothing
 
 -- Note [WithObjectPath]
 instance Representable (WithObjectPath (Characteristic m a)) where
@@ -362,7 +378,7 @@ instance Representable (WithObjectPath (Service m)) where
 -- have relevance within Bluetooth.
 data Application = Application
   { applicationPath     :: ObjectPath
-  , applicationServices :: [Service Handler]
+  , applicationServices :: [Service 'Local]
   } deriving (Generic)
 
 
@@ -371,7 +387,7 @@ instance HasPath Application ObjectPath where
   path f (Application p s)
     = fmap (\ y -> Application y s) (f p)
 
-instance HasServices Application [Service Handler] where
+instance HasServices Application [Service 'Local] where
   {-# INLINE services #-}
   services f (Application p s)
     = fmap (\ y -> Application p y) (f s)

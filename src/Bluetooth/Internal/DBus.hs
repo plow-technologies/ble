@@ -103,7 +103,7 @@ advertisementFor app = WOP p adv
 
 
 -- | Triggers notifications or indications.
-triggerNotification :: ApplicationRegistered -> CharacteristicBS Handler -> BluetoothM ()
+triggerNotification :: ApplicationRegistered -> CharacteristicBS 'Local -> BluetoothM ()
 triggerNotification (ApplicationRegistered _) c = do
    case c ^. readValue of
      Nothing -> throwError "Handler does not have a readValue implementation!"
@@ -126,7 +126,7 @@ triggerNotification (ApplicationRegistered _) c = do
         Right val -> return val
 
 -- | Get a service by UUID. Returns Nothing if the service could not be found.
-getService :: UUID -> BluetoothM (Maybe (Service BluetoothM))
+getService :: UUID -> BluetoothM (Maybe (Service 'Remote))
 getService serviceUUID = do
   services' <- getAllServices
   return $ case filter (\x -> x ^. uuid == serviceUUID) services' of
@@ -135,7 +135,7 @@ getService serviceUUID = do
     (x:_) -> Just x
 
 -- | Get all registered services.
-getAllServices :: BluetoothM [Service BluetoothM]
+getAllServices :: BluetoothM [Service 'Remote]
 getAllServices = do
   objects :: Map.Map ObjectPath (Map.Map T.Text (Map.Map T.Text DontCareFromRep))
     <- callMethodBM "/" objectManagerIFace "GetManagedObjects" ()
@@ -158,7 +158,7 @@ getAllServices = do
                  , CPEncryptAuthenticatedRead, CPAuthenticatedSignedWrites]
 
     charFromRep :: ObjectPath -> DBusValue AnyDBusDict
-      -> Maybe (CharacteristicBS BluetoothM)
+      -> Maybe (CharacteristicBS 'Remote)
     charFromRep charPath dict' = do
       dict :: Map.Map T.Text (DBusValue 'TypeVariant) <- fromRep dict'
       let unmakeAny :: (Representable a) => DBusValue 'TypeVariant -> Maybe a
@@ -173,10 +173,10 @@ getAllServices = do
             then Just $
               callMethodBM charPath gattCharacteristicIFace "WriteValue"
             else Nothing
-      let char = Characteristic uuid' properties' mrv mwv
+      let char = RemoteChar uuid' properties' mrv mwv charPath
       return char
 
-    mkChar :: ObjectPath -> BluetoothM (CharacteristicBS BluetoothM)
+    mkChar :: ObjectPath -> BluetoothM (CharacteristicBS 'Remote)
     mkChar charPath = do
       charProps  <- callMethodBM charPath propertiesIFace "GetAll"
         (T.pack gattCharacteristicIFace)
@@ -193,7 +193,7 @@ getAllServices = do
       uuid' :: UUID <- unmakeAny =<< Map.lookup "UUID" dict
       return $ Service uuid' []
 
-    mkService :: ObjectPath -> [ObjectPath] -> BluetoothM (Service BluetoothM)
+    mkService :: ObjectPath -> [ObjectPath] -> BluetoothM (Service 'Remote)
     mkService servicePath charPaths = do
       serviceProps <- callMethodBM servicePath propertiesIFace "GetAll"
         (T.pack gattServiceIFace)
@@ -205,27 +205,36 @@ getAllServices = do
 
 -- | Starts notifications on the remote (peripheral), handling it with the
 -- provided callback.
-startNotify :: forall a. (Representable a
-  , ArgParity (FlattenRepType (RepType a)) ~ 'Arg 'Null)
-  => Characteristic BluetoothM a -> (a -> IO ()) -> BluetoothM ()
-startNotify _char handler = do
+startNotify ::
+  (Representable a, ArgParity (FlattenRepType (RepType a)) ~ 'Arg 'Null)
+  => Characteristic 'Remote a -> (a -> IO ()) -> BluetoothM ()
+startNotify char handler = do
   conn <- dbusConn <$> ask
   liftIO $ handleSignal sigDesc Nothing matchAll handler conn
   where
-    {-sigDesc :: SignalDescription (FlattenRepType (RepType a))-}
     sigDesc = SignalDescription
-      { signalDPath = "/"
+      { signalDPath = char ^. path
       , signalDInterface = T.pack gattCharacteristicIFace
       , signalDMember = "StartNotify"
       , signalDArguments = "input" :> Done
       }
 
 -- | Stop notifications on the remote (peripheral).
-{-stopNotify :: Characteristic BluetoothM a -> BluetoothM ()-}
-{-stopNotify = _-}
+stopNotify :: Characteristic 'Remote a -> BluetoothM ()
+stopNotify char = do
+  conn <- dbusConn <$> ask
+  liftIO $ handleSignal sigDesc Nothing matchAll return conn
+  where
+    sigDesc = SignalDescription
+      { signalDPath = char ^. path
+      , signalDInterface = T.pack gattCharacteristicIFace
+      , signalDMember = "StopNotify"
+      , signalDArguments = Done
+      }
 
--- * Constants
-
+-- * Constants (ish)
+-- We use IORefs here rather than have it be a constant because when mocking
+-- for tests we can't take up this name.
 bluezName :: IORef T.Text
 bluezName = unsafePerformIO $ newIORef "org.bluez"
 {-# NOINLINE bluezName #-}

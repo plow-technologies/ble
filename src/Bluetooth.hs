@@ -55,10 +55,17 @@ module Bluetooth
   , runBluetoothM
   , runHandler
 
+  -- ** Notifications
+  , characteristicIsNotifying
+  , triggerNotification
+
   -- * Writing centrals/clients
   , getAllServices
   , getService
 
+  -- ** Notifications
+  , startNotify
+  , stopNotify
 
   -- * Field lenses
   , uuid
@@ -77,9 +84,6 @@ module Bluetooth
   , includeTxPower
   , connectionName
 
-  -- * Notifications
-  , characteristicIsNotifying
-  , triggerNotification
 
 
 
@@ -95,6 +99,7 @@ module Bluetooth
   , CharacteristicBS
   , Advertisement(..)
   , WithObjectPath
+  , Location(..)
 
 
   -- * Encoding and decoding

@@ -85,12 +85,12 @@ instance Arbitrary Application where
 instance Arbitrary ObjectPath where
   arbitrary = objectPath . T.pack <$> arbitrary
 
-instance (Monad m) => Arbitrary (Service m) where
+instance Arbitrary (Service 'Local) where
   arbitrary = Service <$> arbitrary <*> arbitrary
 
-instance {-# OVERLAPPABLE #-} (CoArbitrary a, Arbitrary a, Monad m)
-  => Arbitrary (Characteristic m a) where
-  arbitrary = Characteristic
+instance {-# OVERLAPPABLE #-} (CoArbitrary a, Arbitrary a)
+  => Arbitrary (Characteristic 'Local a) where
+  arbitrary = LocalChar
     <$> arbitrary
     <*> arbitrary
     <*> (fmap return <$> arbitrary)
@@ -109,8 +109,8 @@ instance Show (Characteristic m Void) where
         ++ "characteristicUuid = " ++ show (a ^. uuid) ++ ", "
         ++ "characteristicProperties = " ++ show (a ^. properties) ++ " }"
 
-instance {-# OVERLAPPING #-} Arbitrary (Characteristic m Void) where
-  arbitrary = Characteristic
+instance {-# OVERLAPPING #-} Arbitrary (Characteristic 'Local Void) where
+  arbitrary = LocalChar
     <$> arbitrary
     <*> arbitrary
     <*> pure Nothing

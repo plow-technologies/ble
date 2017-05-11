@@ -109,11 +109,11 @@ defPropIFace opath supportedIFaceName val =
            , signalDArguments = "changes" :> Done
            }
 
-instance HasInterface (WithObjectPath (Service Handler)) Properties where
+instance HasInterface (WithObjectPath (Service 'Local)) Properties where
   getInterface service _
     = defPropIFace (Just $ service ^. path) (T.pack gattServiceIFace) service
 
-instance HasInterface (WithObjectPath (CharacteristicBS Handler)) Properties where
+instance HasInterface (WithObjectPath (CharacteristicBS 'Local)) Properties where
   getInterface char _
     = baseIface { interfaceProperties = SomeProperty prop
                                       : interfaceProperties baseIface }
@@ -134,7 +134,7 @@ instance HasInterface Advertisement Properties where
 -- * GattService
 
 
-instance HasInterface (WithObjectPath (Service Handler)) GattService where
+instance HasInterface (WithObjectPath (Service 'Local)) GattService where
   getInterface service _ =
     Interface
       { interfaceMethods = []
@@ -180,7 +180,7 @@ handlerToMethodHandler (Handler h) = MHT $ mapExceptT go h
       Left e -> return . Left $ MsgError e Nothing []
       Right v -> return $ Right v
 
-instance HasInterface (WithObjectPath (CharacteristicBS Handler)) GattCharacteristic where
+instance HasInterface (WithObjectPath (CharacteristicBS 'Local)) GattCharacteristic where
   getInterface char _ =
     Interface
       { interfaceMethods = [readVal, writeVal, startNotify, stopNotify]
@@ -272,7 +272,7 @@ instance HasInterface (WithObjectPath (CharacteristicBS Handler)) GattCharacteri
         where
           mvar = characteristicIsNotifying (char ^. value . uuid)
 
-valProp :: WithObjectPath (CharacteristicBS Handler)
+valProp :: WithObjectPath (CharacteristicBS 'Local)
    -> Property (RepType BS.ByteString)
 valProp char = mkProperty (char ^. path)
                           (T.pack gattCharacteristicIFace)
