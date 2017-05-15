@@ -1,0 +1,20 @@
+# Higher-level API
+
+service :=
+   [ <uuid> :=> <char>
+   ...
+   ]
+
+char :=
+
+
+# Testing
+
+Add to `/etc/dbus-1/system.conf`:
+
+  <policy user="root">
+    <allow own="org.bluez.Mock"/>
+    <allow send_destination="org.bluez.Mock"/>
+  </policy>
+
+Then `systemctl reload dbus`.

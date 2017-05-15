@@ -3,6 +3,7 @@
 {-# LANGUAGE StandaloneDeriving         #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE UndecidableInstances       #-}
+{-# OPTIONS_GHC -ddump-splices   #-}
 #if !MIN_VERSION_base(4,9,0)
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 #endif
@@ -30,7 +31,6 @@ import DBus.Types             (dBusConnectionName, root)
 import GHC.Exts               (IsList (..))
 import GHC.Generics           (Generic)
 import Lens.Micro
-import Lens.Micro.TH          (makeFields)
 import System.IO.Unsafe       (unsafePerformIO)
 
 import qualified Data.ByteString as BS
@@ -44,6 +44,7 @@ import Bluetooth.Internal.Interfaces
 import Bluetooth.Internal.Utils
 import Bluetooth.Internal.Lenses
 
+
 -- | Append two Texts, keeping exactly one slash between them.
 (</>) :: T.Text -> T.Text -> T.Text
 a </> b
@@ -56,6 +57,13 @@ parentPath p = case reverse $ T.splitOn "/" p of
   _:xs -> T.intercalate "/" $ reverse xs
   []   -> "/"
 
+-- * Place
+
+-- | Whether a service/characteristic is running on this computer (`Local`) or
+-- another (`Remote`). If `Local`, we're acting as a peripheral; otherwise, as
+-- a central.
+data Location = Local | Remote
+  deriving (Eq, Show, Read, Generic)
 
 -- * UUID
 
@@ -105,7 +113,7 @@ instance Rand.Random UUID where
     let (a', g') = Rand.randomR (lo,hi) g in (UUID a', g')
   random g = let (a', g') = Rand.random g in (UUID a', g')
 
--- * Any
+-- * Any and DontCare
 
 -- | A Haskell existential type corresponding to DBus' @Variant@.
 data Any where
@@ -114,7 +122,7 @@ data Any where
 instance Representable Any where
   type RepType Any = 'TypeVariant
   toRep (MkAny x) = DBVVariant (toRep x)
-  fromRep (DBVVariant x) = Just (MkAny x)
+  fromRep = error "not implemented"
 
 -- Note [WithObjectPath]
 data WithObjectPath a = WOP
@@ -122,16 +130,24 @@ data WithObjectPath a = WOP
   , withObjectPathValue :: a
   } deriving (Eq, Show, Generic, Functor)
 
-makeFields ''WithObjectPath
+instance HasPath (WithObjectPath a) ObjectPath where
+  {-# INLINE path #-}
+  path f (WOP p v)
+    = fmap (\y -> WOP y v) (f p)
+instance HasValue (WithObjectPath a) a where
+  {-# INLINE value #-}
+  value f (WOP p v)
+    = fmap (\ y -> WOP p y) (f v)
+
+data DontCareFromRep = DontCareFromRep
+  deriving (Eq, Show, Read, Generic)
+
+instance Representable DontCareFromRep where
+  type RepType DontCareFromRep = 'TypeVariant
+  toRep _ = DBVVariant (toRep ())
+  fromRep _ = Just DontCareFromRep
 
 type AnyDBusDict = 'TypeDict 'TypeString 'TypeVariant
-
--- * Method
-
-{-data Method where-}
-  {-ReadValue :: ReadValueM BS.ByteString-}
-  {-WriteValue :: BS.ByteString -> WriteValueM BS.ByteString-}
-  {-Notify :: -}
 
 -- * Descriptor
 
@@ -161,7 +177,6 @@ data CharacteristicProperty
   | CPAuthenticatedSignedWrites
   | CPNotify
   | CPIndicate
-  | CPSignedWriteCommand
   deriving (Eq, Show, Read, Enum, Bounded, Ord, Generic)
 
 instance Representable CharacteristicProperty where
@@ -186,14 +201,16 @@ chrPropPairs =
   , (CPAuthenticatedSignedWrites, "authenticated-signed-writes")
   , (CPNotify, "notify")
   , (CPIndicate, "indicate")
-  , (CPSignedWriteCommand, "authenticated-signed-writes")
   ]
 
 data CharacteristicOptions = CharacteristicOptions
   { characteristicOptionsOffset :: Maybe Word16
   } deriving (Eq, Show, Read, Generic)
 
-makeFields ''CharacteristicOptions
+instance HasOffset CharacteristicOptions (Maybe Word16) where
+  {-# INLINE offset #-}
+  offset f (CharacteristicOptions x)
+    = fmap (\ y -> CharacteristicOptions y) (f x)
 
 instance Representable CharacteristicOptions where
   type RepType CharacteristicOptions = AnyDBusDict
@@ -206,19 +223,61 @@ instance Representable CharacteristicOptions where
     Nothing -> DBVDict []
     Just v  -> DBVDict [(toRep ("offset" :: T.Text), toRep $ MkAny v)]
 
-type CharacteristicBS = Characteristic BS.ByteString
+type CharacteristicBS m = Characteristic m BS.ByteString
 
-data Characteristic typ = Characteristic
-  { characteristicUuid       :: UUID
-  , characteristicProperties :: [CharacteristicProperty]
-  , characteristicReadValue  :: Maybe (Handler typ)
-  -- | Write a value. Note that the value is only writeable externally if the
-  -- characteristic contains the CPWrite property *and* this is a Just.
-  , characteristicWriteValue :: Maybe (typ -> Handler Bool)
-  } deriving (Generic)
+data Characteristic (loc :: Location) typ where
+  LocalChar ::
+    { characteristicLUuid       :: UUID
+    , characteristicLProperties :: [CharacteristicProperty]
+    , characteristicLReadValue  :: Maybe (Handler typ)
+    , characteristicLWriteValue :: Maybe (typ -> Handler Bool)
+    } -> Characteristic 'Local typ
+  RemoteChar ::
+    { characteristicRUuid       :: UUID
+    , characteristicRProperties :: [CharacteristicProperty]
+    , characteristicRReadValue  :: Maybe (BluetoothM typ)
+    , characteristicRWriteValue :: Maybe (typ -> BluetoothM Bool)
+    , characteristicRPath       :: ObjectPath
+    } -> Characteristic 'Remote typ
 
-makeFields ''Characteristic
+instance HasProperties (Characteristic m v) [CharacteristicProperty] where
+  {-# INLINE properties #-}
+  properties f (LocalChar u p rv wv)
+    = fmap (\ y -> LocalChar u y rv wv) (f p)
+  properties f (RemoteChar u p rv wv p')
+    = fmap (\ y -> RemoteChar u y rv wv p') (f p)
 
+instance HasReadValue (Characteristic 'Local v) (Maybe (Handler v)) where
+  {-# INLINE readValue #-}
+  readValue f (LocalChar u p rv wv)
+    = fmap (\ y -> LocalChar u p y wv) (f rv)
+
+instance HasReadValue (Characteristic 'Remote v) (Maybe (BluetoothM v)) where
+  {-# INLINE readValue #-}
+  readValue f (RemoteChar u p rv wv p')
+    = fmap (\ y -> RemoteChar u p y wv p') (f rv)
+
+instance HasUuid (Characteristic m v) UUID where
+  {-# INLINE uuid #-}
+  uuid f (LocalChar u p rv wv)
+    = fmap (\ y -> LocalChar y p rv wv) (f u)
+  uuid f (RemoteChar u p rv wv p')
+    = fmap (\ y -> RemoteChar y p rv wv p') (f u)
+
+instance HasWriteValue (Characteristic 'Local v) (Maybe (v -> Handler Bool)) where
+  {-# INLINE writeValue #-}
+  writeValue f (LocalChar u p rv wv)
+    = fmap (\ y -> LocalChar u p rv y) (f wv)
+
+instance HasWriteValue (Characteristic 'Remote v) (Maybe (v -> BluetoothM Bool)) where
+  {-# INLINE writeValue #-}
+  writeValue f (RemoteChar u p rv wv p')
+    = fmap (\ y -> RemoteChar u p rv y p') (f wv)
+
+instance HasPath (Characteristic 'Remote v) ObjectPath where
+  {-# INLINE path #-}
+  path f (RemoteChar u p rv wv p')
+    = fmap (\ y -> RemoteChar u p rv wv y) (f p')
 
 -- This is essentialy the unsafePerformIO memoization trick
 characteristicIsNotifying :: UUID -> MVar Bool
@@ -246,26 +305,12 @@ objectPathOf = unsafePerformIO $ do
       Just v  -> return (curMap, v)
 {-# NOINLINE objectPathOf #-}
 
-{-
--- Like 'characteristicIsNotifying', but for cached values.
-characteristicValue :: UUID -> MVar BS.ByteString
-characteristicValue = unsafePerformIO $ do
-  cm <- newMVar $ Map.empty
-  return $ \uuid' -> unsafePerformIO $ do
-    modifyMVar cm $ \curMap -> case Map.lookup uuid' curMap of
-      Nothing -> do
-        e <- newMVar False
-        return (Map.insert uuid' e curMap, e)
-      Just v  -> return (curMap, v)
-{-# NOINLINE characteristicValue #-}
--}
-
-instance IsString (Characteristic a) where
-  fromString x = Characteristic (fromString x) [] Nothing Nothing
+instance IsString (Characteristic 'Local a) where
+  fromString x = LocalChar (fromString x) [] Nothing Nothing
 
 -- Note [WithObjectPath]
-instance Representable (WithObjectPath (Characteristic a)) where
-  type RepType (WithObjectPath (Characteristic a)) = AnyDBusDict
+instance Representable (WithObjectPath (Characteristic m a)) where
+  type RepType (WithObjectPath (Characteristic m a)) = AnyDBusDict
   toRep char = toRep tmap
     where
       tmap :: Map.Map T.Text Any
@@ -273,7 +318,8 @@ instance Representable (WithObjectPath (Characteristic a)) where
                           , ("Service", MkAny $ (char ^. path) & toText %~ parentPath)
                           , ("Flags", MkAny $ char ^. value . properties)
                           ]
-  fromRep _ = error "not implemented"
+  fromRep = error "not implemented"
+
 
 characteristicObjectPath :: ObjectPath -> Int -> ObjectPath
 characteristicObjectPath appOPath idx = appOPath & toText %~ addSuffix
@@ -288,19 +334,27 @@ characteristicObjectPath appOPath idx = appOPath & toText %~ addSuffix
 
 -- * Service
 
-data Service = Service
+data Service m = Service
   { serviceUuid            :: UUID
-  , serviceCharacteristics :: [CharacteristicBS]
+  , serviceCharacteristics :: [CharacteristicBS m]
   } deriving (Generic)
 
-makeFields ''Service
+instance HasCharacteristics (Service m) [CharacteristicBS m] where
+  {-# INLINE characteristics #-}
+  characteristics f (Service u c)
+    = fmap (\ y -> Service u y) (f c)
 
-instance IsString Service where
+instance HasUuid (Service m) UUID where
+  {-# INLINE uuid #-}
+  uuid f (Service u c)
+    = fmap (\ y -> Service y c) (f u)
+
+instance IsString (Service m) where
   fromString x = Service (fromString x) []
 
 -- Note [WithObjectPath]
-instance Representable (WithObjectPath Service) where
-  type RepType (WithObjectPath Service) = AnyDBusDict
+instance Representable (WithObjectPath (Service m)) where
+  type RepType (WithObjectPath (Service m)) = AnyDBusDict
   toRep serv = toRep tmap
     where
       tmap :: Map.Map T.Text Any
@@ -317,7 +371,6 @@ instance Representable (WithObjectPath Service) where
 
   fromRep _ = error "not implemented"
 
-
 -- * Application
 
 -- | An application. Can be created from it's @IsString@ instance.
@@ -325,10 +378,19 @@ instance Representable (WithObjectPath Service) where
 -- have relevance within Bluetooth.
 data Application = Application
   { applicationPath     :: ObjectPath
-  , applicationServices :: [Service]
+  , applicationServices :: [Service 'Local]
   } deriving (Generic)
 
-makeFields ''Application
+
+instance HasPath Application ObjectPath where
+  {-# INLINE path #-}
+  path f (Application p s)
+    = fmap (\ y -> Application y s) (f p)
+
+instance HasServices Application [Service 'Local] where
+  {-# INLINE services #-}
+  services f (Application p s)
+    = fmap (\ y -> Application p y) (f s)
 
 instance IsString Application where
   fromString x = Application (fromString x) []
@@ -388,7 +450,48 @@ data Advertisement = Advertisement
   , advertisementIncludeTxPower   :: Bool
   } deriving (Eq, Show, Generic)
 
-makeFields ''Advertisement
+instance HasIncludeTxPower Advertisement Bool where
+  {-# INLINE includeTxPower #-}
+  includeTxPower
+    fn
+    (Advertisement a b c d e f)
+    = fmap (\ y -> Advertisement a b c d e y) (fn f)
+
+instance HasManufacturerData Advertisement (Map.Map Word16 BS.ByteString) where
+  {-# INLINE manufacturerData #-}
+  manufacturerData
+    fn
+    (Advertisement a b c d e f)
+    = fmap (\ y -> Advertisement a b c y e f) (fn d)
+
+instance HasServiceData Advertisement (Map.Map UUID BS.ByteString) where
+  {-# INLINE serviceData #-}
+  serviceData
+    fn
+    (Advertisement a b c d e f)
+    = fmap (\ y -> Advertisement a b c d y f) (fn e)
+
+instance HasServiceUUIDs Advertisement [UUID] where
+  {-# INLINE serviceUUIDs #-}
+  serviceUUIDs
+    fn
+    (Advertisement a b c d e f)
+    = fmap (\ y -> Advertisement a y c d e f) (fn b)
+
+instance HasSolicitUUIDs Advertisement [UUID] where
+  {-# INLINE solicitUUIDs #-}
+  solicitUUIDs
+    fn
+    (Advertisement a b c d e f)
+    = fmap
+        (\ y -> Advertisement a b y d e f) (fn c)
+
+instance HasType_ Advertisement AdvertisementType where
+  {-# INLINE type_ #-}
+  type_
+    fn
+    (Advertisement a b c d e f)
+    = fmap (\ y -> Advertisement y b c d e f) (fn a)
 
 instance IsList Advertisement where
   type Item Advertisement = UUID
@@ -425,7 +528,21 @@ instance Representable Advertisement where
 instance Default Advertisement where
   def = Advertisement Peripheral [] [] mempty mempty False
 
+-- * Device
 
+data Device = Device
+  { devicePath :: ObjectPath
+  } deriving (Eq, Show, Generic)
+
+instance HasPath Device ObjectPath where
+  {-# INLINE path #-}
+  path f (Device p)
+    = fmap (\y -> Device y) (f p)
+
+instance IsString Device where
+  fromString s = Device . fromString $ "/org/bluez/hci0/dev_" ++ s'
+    where
+      s' = fmap (\x -> if x == ':' then '_' else x) s
 
 -- * Connection
 
@@ -461,6 +578,7 @@ connect = do
 data Error
   = DBusError MethodError
   | BLEError T.Text
+  | OtherError T.Text
   deriving (Show, Generic)
 
 instance IsString Error where
@@ -490,6 +608,7 @@ data Status
   = Success
   | Failure
   deriving (Eq, Show, Read, Ord, Enum, Generic)
+
 
 {- Note [WithObjectPath]
 ~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -47,12 +47,12 @@ app appState
   = "/com/turingjump/example/hrs"
     & services .~ [heartRateService appState]
 
-heartRateService :: AppState -> Service
+heartRateService :: AppState -> Service 'Local
 heartRateService appState
   = "0000180d-0000-1000-8000-00805f9b34fb"
     & characteristics .~ [heartRateMeasurement appState, bodySensorLocation]
 
-heartRateMeasurement :: AppState -> CharacteristicBS
+heartRateMeasurement :: AppState -> CharacteristicBS 'Local
 heartRateMeasurement appState
   = "00002a37-0000-1000-8000-00805f9b34fb"
      & readValue ?~ fmap heartRateToBS (liftIO . readIORef $ currentHeartRate appState)
@@ -70,7 +70,7 @@ heartRateMeasurement appState
 heartRateToBS :: Int -> BS.ByteString
 heartRateToBS i = "0x06" <> S.encode i
 
-bodySensorLocation :: CharacteristicBS
+bodySensorLocation :: CharacteristicBS 'Local
 bodySensorLocation
   = "00002a38-0000-1000-8000-00805f9b34fb"
      & readValue ?~ encodeRead (return (0x01 :: Word))

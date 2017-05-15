@@ -8,15 +8,17 @@ import DBus
 import DBus.Signal          (execSignalT)
 import Lens.Micro
 
+import qualified Data.ByteString as BS
 import qualified Data.Map        as Map
 import qualified Data.Text       as T
 
+import Bluetooth.Internal.Errors
 import Bluetooth.Internal.HasInterface
 import Bluetooth.Internal.Interfaces
+import Bluetooth.Internal.Lenses
 import Bluetooth.Internal.Types
 import Bluetooth.Internal.Utils
-import Bluetooth.Internal.Errors
-import Bluetooth.Internal.Lenses
+
 
 -- | Registers an application and advertises it. If you would like to have
 -- finer-grained control of the advertisement, use @registerApplication@ and
@@ -32,10 +34,8 @@ registerApplication :: Application -> BluetoothM ApplicationRegistered
 registerApplication app = do
   conn <- ask
   addAllObjs conn app
-  () <- toBluetoothM . const
-    $ callMethod bluezName bluezPath (T.pack gattManagerIFace)
-        "RegisterApplication" args []
-    $ dbusConn conn
+  bluezPath' <- liftIO $ readIORef bluezPath
+  () <- callMethodBM bluezPath' gattManagerIFace "RegisterApplication" args
   return $ ApplicationRegistered (app ^. path)
   where
     args :: (ObjectPath, Map.Map T.Text Any)
@@ -43,11 +43,8 @@ registerApplication app = do
 
 unregisterApplication :: ApplicationRegistered -> BluetoothM ()
 unregisterApplication (ApplicationRegistered appPath) = do
-  conn <- ask
-  toBluetoothM . const
-    $ callMethod bluezName bluezPath (T.pack gattManagerIFace)
-        "UnregisterApplication" appPath []
-    $ dbusConn conn
+  bluezPath' <- liftIO $ readIORef bluezPath
+  callMethodBM bluezPath' gattManagerIFace "UnregisterApplication" appPath
 
 
 -- | Adds handlers for all the objects managed by the Application (plus the
@@ -79,9 +76,8 @@ advertise adv = do
     addObject conn (adv ^. path)
       $  (adv `withInterface` leAdvertisementIFaceP)
       <> ((adv ^. value) `withInterface` propertiesIFaceP)
-  toBluetoothM . const $ do
-    callMethod bluezName bluezPath (T.pack leAdvertisingManagerIFace) "RegisterAdvertisement" args []
-      $ dbusConn conn
+  bluezPath' <- liftIO $ readIORef bluezPath
+  callMethodBM bluezPath' leAdvertisingManagerIFace "RegisterAdvertisement" args
   where
     args :: (ObjectPath, Map.Map T.Text Any)
     args = (adv ^. path, Map.empty)
@@ -89,10 +85,8 @@ advertise adv = do
 -- | Unregister an adverstisement.
 unadvertise :: WithObjectPath Advertisement -> BluetoothM ()
 unadvertise adv = do
-  conn <- ask
-  toBluetoothM . const $ do
-    callMethod bluezName bluezPath (T.pack leAdvertisingManagerIFace) "UnregisterAdvertisement" args []
-      $ dbusConn conn
+  bluezPath' <- liftIO $ readIORef bluezPath
+  callMethodBM bluezPath' leAdvertisingManagerIFace "UnregisterAdvertisement" args
   where
     args :: ObjectPath
     args = adv ^. path
@@ -108,7 +102,7 @@ advertisementFor app = WOP p adv
 
 
 -- | Triggers notifications or indications.
-triggerNotification :: ApplicationRegistered -> CharacteristicBS -> BluetoothM ()
+triggerNotification :: ApplicationRegistered -> CharacteristicBS 'Local -> BluetoothM ()
 triggerNotification (ApplicationRegistered _) c = do
    case c ^. readValue of
      Nothing -> throwError "Handler does not have a readValue implementation!"
@@ -130,10 +124,122 @@ triggerNotification (ApplicationRegistered _) c = do
         Left e -> throwError . DBusError . MethodErrorMessage $ errorBody e
         Right val -> return val
 
--- * Constants
+-- | Get a service by UUID. Returns Nothing if the service could not be found.
+getService :: UUID -> BluetoothM (Maybe (Service 'Remote))
+getService serviceUUID = do
+  services' <- getAllServices
+  return $ case filter (\x -> x ^. uuid == serviceUUID) services' of
+    [] -> Nothing
+    -- This should never be a list with more than one element.
+    (x:_) -> Just x
 
-bluezName :: T.Text
-bluezName = "org.bluez"
+-- | Get all registered services.
+getAllServices :: BluetoothM [Service 'Remote]
+getAllServices = do
+  objects :: Map.Map ObjectPath (Map.Map T.Text (Map.Map T.Text DontCareFromRep))
+    <- callMethodBM "/" objectManagerIFace "GetManagedObjects" ()
 
-bluezPath :: ObjectPath
-bluezPath = "/org/bluez/hci0"
+  -- We need to construct services manually, since we get the characteristics
+  -- separately.
+  let chars =
+       Map.keys $ Map.filter (T.pack gattCharacteristicIFace `Map.member`) objects
+  let servs =
+       Map.keys $ Map.filter (T.pack gattServiceIFace `Map.member`) objects
+  forM servs $ \s -> mkService s [ c | c <- chars , s  `isPathPrefix` c ]
+
+  where
+
+    readProps :: [CharacteristicProperty]
+    readProps = [CPRead, CPEncryptRead, CPEncryptAuthenticatedRead]
+
+    writeProps :: [CharacteristicProperty]
+    writeProps = [ CPWrite, CPWriteWithoutResponse, CPEncryptWrite
+                 , CPEncryptAuthenticatedRead, CPAuthenticatedSignedWrites]
+
+    charFromRep :: ObjectPath -> DBusValue AnyDBusDict
+      -> Maybe (CharacteristicBS 'Remote)
+    charFromRep charPath dict' = do
+      dict :: Map.Map T.Text (DBusValue 'TypeVariant) <- fromRep dict'
+      let unmakeAny :: (Representable a) => DBusValue 'TypeVariant -> Maybe a
+          unmakeAny x = fromRep =<< fromVariant x
+      uuid' :: UUID <- unmakeAny =<< Map.lookup "UUID" dict
+      properties' <- unmakeAny =<< Map.lookup "Flags" dict
+      let mrv = if any (`elem` readProps) properties'
+            then Just $
+              callMethodBM charPath gattCharacteristicIFace "ReadValue" ()
+            else Nothing
+      let mwv = if any (`elem` writeProps) properties'
+            then Just $
+              callMethodBM charPath gattCharacteristicIFace "WriteValue"
+            else Nothing
+      let char = RemoteChar uuid' properties' mrv mwv charPath
+      return char
+
+    mkChar :: ObjectPath -> BluetoothM (CharacteristicBS 'Remote)
+    mkChar charPath = do
+      charProps  <- callMethodBM charPath propertiesIFace "GetAll"
+        (T.pack gattCharacteristicIFace)
+      case charFromRep charPath charProps of
+        Nothing -> throwError $ OtherError
+          "Bluez returned invalid characteristic"
+        Just c -> return c
+
+    serviceFromRep :: DBusValue AnyDBusDict -> Maybe (Service m)
+    serviceFromRep dict' = do
+      dict :: Map.Map T.Text (DBusValue 'TypeVariant) <- fromRep dict'
+      let unmakeAny :: (Representable a) => DBusValue 'TypeVariant -> Maybe a
+          unmakeAny x = fromRep =<< fromVariant x
+      uuid' :: UUID <- unmakeAny =<< Map.lookup "UUID" dict
+      return $ Service uuid' []
+
+    mkService :: ObjectPath -> [ObjectPath] -> BluetoothM (Service 'Remote)
+    mkService servicePath charPaths = do
+      serviceProps <- callMethodBM servicePath propertiesIFace "GetAll"
+        (T.pack gattServiceIFace)
+      chars <- mapM mkChar charPaths
+      case serviceFromRep serviceProps of
+        Nothing -> throwError $ OtherError
+          "Bluez returned invalid service"
+        Just serv -> return $ serv & characteristics .~ chars
+
+-- | Starts notifications on the remote (peripheral), handling it with the
+-- provided callback.
+startNotify ::
+  {-(Representable a, ArgParity (FlattenRepType (RepType a)) ~ 'Arg 'Null)-}
+  CharacteristicBS 'Remote -> (BS.ByteString -> IO ()) -> BluetoothM ()
+startNotify char handler = do
+  conn <- dbusConn <$> ask
+  rprop <- liftIO $ valRemoteProp char
+  liftIO $ handlePropertyChanged rprop (whenJust handler) conn
+  callMethodBM (char ^. path) gattCharacteristicIFace "StartNotify" ()
+  where
+    whenJust fn (Just v) = fn v
+    whenJust _  Nothing  = return ()
+
+-- | Stop notifications on the remote (peripheral).
+stopNotify :: Characteristic 'Remote a -> BluetoothM ()
+stopNotify char
+  = callMethodBM (char ^. path) gattCharacteristicIFace "StopNotify" ()
+
+-- Helpers
+
+valRemoteProp :: CharacteristicBS 'Remote -> IO (RemoteProperty (RepType BS.ByteString))
+valRemoteProp char = do
+  bluezName' <- readIORef bluezName
+  return $ RP
+     { rpEntity = bluezName' -- Is this the right entity?
+     , rpObject = char ^. path
+     , rpInterface = T.pack gattCharacteristicIFace
+     , rpName = "Value"
+     }
+
+callMethodBM :: (Representable args, Representable ret)
+  => ObjectPath
+  -> String
+  -> T.Text
+  -> args
+  -> BluetoothM ret
+callMethodBM opath iface methodName args = do
+  conn <- ask
+  bluezName' <- liftIO $ readIORef bluezName
+  toBluetoothM . const $ callMethod bluezName' opath (T.pack iface) methodName args [] (dbusConn conn)
