@@ -6,7 +6,6 @@ import Data.IORef           (readIORef, writeIORef)
 import Data.Monoid          ((<>))
 import DBus
 import DBus.Signal          (execSignalT)
-import DBus.Types           (RemoteProperty (..))
 import Lens.Micro
 
 import qualified Data.ByteString as BS

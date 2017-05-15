@@ -9,15 +9,12 @@ virtualenv:
 
 env:
   global:
-    - BLE_TEST_LOG_FILE=test.log
     - PACKAGES="libgmp-dev libdbus-1-dev libdbus-glib-1-dev python3-dbus python3-gi python3-pip"
   matrix:
-    - STACK_YAML=stack.yaml BLE_TEST_LOG_FILE=test.log
-    - STACK_YAML=stack-7.10.yaml BLE_TEST_LOG_FILE=test.log
+    - STACK_YAML=stack.yaml
+    - STACK_YAML=stack-7.10.yaml
 
 install:
-  # dbus permissiongs - *before* installing dbus
-  - sudo ./test/Mock/dbus-permissions.sh
   # apt
   - sudo apt-get update -q
   - sudo apt-get install -y $PACKAGES
@@ -26,20 +23,14 @@ install:
   - export PATH=~/.local/bin:$PATH
   - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
   - stack --version
-  # python reqs
-  - pip install --upgrade pip
-  - pip freeze
-  - pip install -r test/Mock/requirements.txt
 
 script:
   - stack setup --no-terminal
-  - stack build --ghc-options=-Werror --no-terminal --flag ble:-hasBluez --flag ble:hasDBus
-  - touch test.log
-  - stack test --ghc-options=-Werror --no-terminal  --flag ble:-hasBluez --flag ble:hasDBus || cat "$BLE_TEST_LOG_FILE" && exit 1
+  - stack build --ghc-options=-Werror --no-terminal --flag ble:-hasBluez --flag ble:-hasDBus
+  - stack test --ghc-options=-Werror --no-terminal  --flag ble:-hasBluez --flag ble:-hasDBus
   - cmp README.md examples/README.lhs
 
 cache:
   directories:
     - $HOME/.stack
     - $HOME/.pip
-    - /etc/dbus-1
