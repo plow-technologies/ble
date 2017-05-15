@@ -1,11 +1,11 @@
 module Mock where
 
-import           Bluetooth               (UUID)
-import           Bluetooth.Internal.DBus (bluezName, bluezPath)
+import           Bluetooth                     (UUID)
+import           Bluetooth.Internal.Interfaces (bluezName, bluezPath)
 import           Data.IORef
 import           Paths_ble
 import           System.IO
-import qualified System.Process          as P
+import qualified System.Process                as P
 
 withAService :: IO a -> IO a
 withAService action = do

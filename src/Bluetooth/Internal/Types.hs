@@ -528,7 +528,21 @@ instance Representable Advertisement where
 instance Default Advertisement where
   def = Advertisement Peripheral [] [] mempty mempty False
 
+-- * Device
 
+data Device = Device
+  { devicePath :: ObjectPath
+  } deriving (Eq, Show, Generic)
+
+instance HasPath Device ObjectPath where
+  {-# INLINE path #-}
+  path f (Device p)
+    = fmap (\y -> Device y) (f p)
+
+instance IsString Device where
+  fromString s = Device . fromString $ "/org/bluez/hci0/dev_" ++ s'
+    where
+      s' = fmap (\x -> if x == ':' then '_' else x) s
 
 -- * Connection
 

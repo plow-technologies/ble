@@ -282,6 +282,7 @@ valProp char = mkProperty (char ^. path)
                           PECSTrue
 
 
+
 instance HasInterface (WithObjectPath Advertisement) LEAdvertisement where
   getInterface adv _ =
     Interface

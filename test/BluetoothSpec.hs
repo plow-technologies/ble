@@ -34,6 +34,7 @@ spec = do
 #ifdef DBusMock
   getServiceSpec
   getAllServicesSpec
+  getAllDevicesSpec
 #endif
   return ()
 
@@ -139,6 +140,40 @@ getAllServicesSpec = describe "getAllServices" $ before connect $ do
   it "retrieves services" $ \conn -> withAService $ do
     Right [service] <- runBluetoothM getAllServices conn
     service ^. uuid `shouldBe` mockServiceUUID
+
+getAllDevicesSpec :: Spec
+getAllDevicesSpec = describe "getAllDevices" $ before connect $ do
+
+  it "retrieves devices" $ \conn -> withAService $ do
+    Right devices <- runBluetoothM getAllDevices conn
+    devices `shouldContain` ["11:22:33:44:55:66"]
+
+  {-context "the returned device" $-}
+    {-pendingWith "dbusmock doesn't currently allow changing properties"-}
+
+    {-it "allows connecting" $ \conn -> withAService $ do-}
+      {-resp1 <- runBluetoothM (isConnected "11:22:33:44:55:66") conn-}
+      {-resp1 `shouldBe` Right False-}
+      {-Right () <- runBluetoothM (connectTo "11:22:33:44:55:66") conn-}
+      {-resp2 <- runBluetoothM (isConnected "11:22:33:44:55:66") conn-}
+      {-resp2 `shouldBe` Right True-}
+
+    {-it "allows pairing" $ \conn -> withAService $ do-}
+      {-resp1 <- runBluetoothM (isPaired "11:22:33:44:55:66") conn-}
+      {-resp1 `shouldBe` Right False-}
+      {-Right () <- runBluetoothM (pairWith "11:22:33:44:55:66") conn-}
+      {-resp2 <- runBluetoothM (isPaired "11:22:33:44:55:66") conn-}
+      {-resp2 `shouldBe` Right True-}
+
+    {-it "allows trusting" $ \conn -> withAService $ do-}
+      {-resp1 <- runBluetoothM (isTrusted "11:22:33:44:55:66") conn-}
+      {-resp1 `shouldBe` Right False-}
+      {-Right () <- runBluetoothM (trust "11:22:33:44:55:66") conn-}
+      {-resp2 <- runBluetoothM (isTrusted "11:22:33:44:55:66") conn-}
+      {-resp2 `shouldBe` Right True-}
+      {-Right () <- runBluetoothM (distrust "11:22:33:44:55:66") conn-}
+      {-resp3 <- runBluetoothM (isTrusted "11:22:33:44:55:66") conn-}
+      {-resp3 `shouldBe` Right True-}
 
 -- * Test service
 

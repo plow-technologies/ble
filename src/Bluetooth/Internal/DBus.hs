@@ -2,16 +2,16 @@ module Bluetooth.Internal.DBus where
 
 import Control.Monad.Except
 import Control.Monad.Reader
-import Data.IORef           (IORef, newIORef, readIORef, writeIORef)
+import Data.IORef           (readIORef, writeIORef)
 import Data.Monoid          ((<>))
 import DBus
 import DBus.Signal          (execSignalT)
-import DBus.Types           (ArgParity, Parity (Arg, Null))
+import DBus.Types           (RemoteProperty (..))
 import Lens.Micro
-import System.IO.Unsafe     (unsafePerformIO)
 
-import qualified Data.Map  as Map
-import qualified Data.Text as T
+import qualified Data.ByteString as BS
+import qualified Data.Map        as Map
+import qualified Data.Text       as T
 
 import Bluetooth.Internal.Errors
 import Bluetooth.Internal.HasInterface
@@ -206,43 +206,33 @@ getAllServices = do
 -- | Starts notifications on the remote (peripheral), handling it with the
 -- provided callback.
 startNotify ::
-  (Representable a, ArgParity (FlattenRepType (RepType a)) ~ 'Arg 'Null)
-  => Characteristic 'Remote a -> (a -> IO ()) -> BluetoothM ()
+  {-(Representable a, ArgParity (FlattenRepType (RepType a)) ~ 'Arg 'Null)-}
+  CharacteristicBS 'Remote -> (BS.ByteString -> IO ()) -> BluetoothM ()
 startNotify char handler = do
   conn <- dbusConn <$> ask
-  liftIO $ handleSignal sigDesc Nothing matchAll handler conn
+  rprop <- liftIO $ valRemoteProp char
+  liftIO $ handlePropertyChanged rprop (whenJust handler) conn
+  callMethodBM (char ^. path) gattCharacteristicIFace "StartNotify" ()
   where
-    sigDesc = SignalDescription
-      { signalDPath = char ^. path
-      , signalDInterface = T.pack gattCharacteristicIFace
-      , signalDMember = "StartNotify"
-      , signalDArguments = "input" :> Done
-      }
+    whenJust fn (Just v) = fn v
+    whenJust _  Nothing  = return ()
 
 -- | Stop notifications on the remote (peripheral).
 stopNotify :: Characteristic 'Remote a -> BluetoothM ()
-stopNotify char = do
-  conn <- dbusConn <$> ask
-  liftIO $ handleSignal sigDesc Nothing matchAll return conn
-  where
-    sigDesc = SignalDescription
-      { signalDPath = char ^. path
-      , signalDInterface = T.pack gattCharacteristicIFace
-      , signalDMember = "StopNotify"
-      , signalDArguments = Done
-      }
+stopNotify char
+  = callMethodBM (char ^. path) gattCharacteristicIFace "StopNotify" ()
 
--- * Constants (ish)
--- We use IORefs here rather than have it be a constant because when mocking
--- for tests we can't take up this name.
-bluezName :: IORef T.Text
-bluezName = unsafePerformIO $ newIORef "org.bluez"
-{-# NOINLINE bluezName #-}
+-- Helpers
 
-bluezPath :: IORef ObjectPath
-bluezPath = unsafePerformIO $ newIORef "/org/bluez/hci0"
-{-# NOINLINE bluezPath #-}
-
+valRemoteProp :: CharacteristicBS 'Remote -> IO (RemoteProperty (RepType BS.ByteString))
+valRemoteProp char = do
+  bluezName' <- readIORef bluezName
+  return $ RP
+     { rpEntity = bluezName' -- Is this the right entity?
+     , rpObject = char ^. path
+     , rpInterface = T.pack gattCharacteristicIFace
+     , rpName = "Value"
+     }
 
 callMethodBM :: (Representable args, Representable ret)
   => ObjectPath

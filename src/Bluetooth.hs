@@ -67,6 +67,18 @@ module Bluetooth
   , startNotify
   , stopNotify
 
+  -- * Devices
+  , getAllDevices
+  , connectTo
+  , disconnectFrom
+  , isConnected
+  , pairWith
+  , isPaired
+  , trust
+  , distrust
+  , isTrusted
+  , getDeviceServiceUUIDs
+
   -- * Field lenses
   , uuid
   , properties
@@ -100,6 +112,7 @@ module Bluetooth
   , Advertisement(..)
   , WithObjectPath
   , Location(..)
+  , Device(..)
 
 
   -- * Encoding and decoding
@@ -124,11 +137,12 @@ module Bluetooth
   , module Lens.Micro.GHC
   ) where
 
-import Bluetooth.Internal.DBus as X
-import Bluetooth.Internal.Types as X
+import Bluetooth.Internal.DBus      as X
+import Bluetooth.Internal.Device    as X
+import Bluetooth.Internal.Errors    as X
+import Bluetooth.Internal.Lenses    as X
 import Bluetooth.Internal.Serialize as X
-import Bluetooth.Internal.Errors as X
-import Bluetooth.Internal.Lenses as X
+import Bluetooth.Internal.Types     as X
 
 import Lens.Micro
 import Lens.Micro.GHC
