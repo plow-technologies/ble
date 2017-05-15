@@ -530,6 +530,11 @@ instance Default Advertisement where
 
 -- * Device
 
+-- | A BLE-enabled device. The @IsString@ instance takes a MAC address such as
+-- @11:22:33:44:55:66@ and generates a device connected on @hci0@. Usually this
+-- is correct adapter, but if using a different one, use the constructor along
+-- with the DBus object path of the device (e.g.
+-- @/org/bluez/hci1/dev_11_22_33_44_55_66@).
 data Device = Device
   { devicePath :: ObjectPath
   } deriving (Eq, Show, Generic)
@@ -547,6 +552,9 @@ instance IsString Device where
 -- * Connection
 
 -- The constructor should not be exported.
+
+-- A connection to the the DBus message bus. This does *not* represent a
+-- connection to a Bluetooth 'Device'.
 data Connection = Connection
   { dbusConn  :: DBusConnection
   -- Should it be possible to remove objects?

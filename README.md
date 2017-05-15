@@ -1,7 +1,7 @@
 # ble - Bluetooth Low Energy for Haskell
 
-*ble* is a Haskell library for writing Bluetooth Low Energy peripherals (and
-soon centrals).
+*ble* is a Haskell library for writing Bluetooth Low Energy peripherals and
+centrals.
 
 For usage, see the  [haddocks](https://hackage.haskell.org/package/ble). There
 are also examples in
@@ -62,6 +62,9 @@ getCounter ref
       putStrLn $ "Old value: " ++ show v
       return True
 ~~~
+
+You can also write centrals (clients). See `HeartRateClient` in the `examples`
+directory.
 
 ## Requirements
 

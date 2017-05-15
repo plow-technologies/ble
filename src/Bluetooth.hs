@@ -16,7 +16,9 @@
 --    ['Advertisement'] This describes how an application will advertise itself
 --    to other BLE devices.
 --
--- All three have @IsString@ instances and lens field accessors.  The
+--    ['Device'] Refers to a BLE-capable device.
+--
+-- All four have @IsString@ instances and lens field accessors.  The
 -- recommended way of using this library is by using the @OverloadedStrings@
 -- pragma and lenses. A complete example can be found
 -- <https://github.com/plow-technologies/ble/blob/master/examples/README.lhs here>.
