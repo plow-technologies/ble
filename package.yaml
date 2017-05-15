@@ -26,11 +26,19 @@ flags:
     description: Whether to run tests that require Bluez
     manual: True
     default: True
+  hasDBus:
+    description: Whether to run tests that require DBus mocking
+    manual: True
+    default: False
 
 extra-source-files:
   - README.md
   - package.yaml
   - LICENSE
+  - test/Mock/requirements.txt
+
+data-files:
+  - test/Mock/start_mock.sh
 
 when:
   - condition: flag(bluez543)
@@ -39,6 +47,10 @@ when:
 when:
   - condition: flag(hasBluez)
     cpp-options: -DBluez
+
+when:
+  - condition: flag(hasDBus)
+    cpp-options: -DDBusMock
 
 dependencies:
   - base >= 4.8 && < 4.10
@@ -51,7 +63,6 @@ dependencies:
   - containers >= 0.5 && < 0.6
   - random >= 1 && < 2
   - microlens >= 0.4 && < 0.5
-  - microlens-th >= 0.4 && < 0.5
   - microlens-ghc >= 0.4 && < 0.5
   - cereal >= 0.4 && < 0.6
   - data-default-class >= 0.0 && < 0.2
@@ -90,6 +101,7 @@ tests:
       - hspec > 2 && < 3
       - QuickCheck >= 2.8 && < 2.10
       - quickcheck-instances >= 0.3 && < 0.4
+      - process >= 1.2 && < 1.5
       - hslogger
 #   doctest:
 #     main:            Doctest.hs
@@ -116,6 +128,11 @@ executables:
       - hslogger
   auth:
     main:            Auth.hs
+    source-dirs:     examples
+    dependencies:
+      - ble
+  hrs-client:
+    main:            HeartRateClient.hs
     source-dirs:     examples
     dependencies:
       - ble

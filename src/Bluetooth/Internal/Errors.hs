@@ -12,11 +12,11 @@ import qualified Data.Text            as T
 import           GHC.Generics         (Generic)
 
 newtype Handler a
-  = Handler { getReadValue :: ExceptT T.Text IO a }
+  = Handler { getHandler :: ExceptT T.Text IO a }
   deriving (Functor, Applicative, Monad, MonadIO, Generic, MonadError T.Text)
 
 runHandler :: Handler a -> IO (Either T.Text a)
-runHandler = runExceptT . getReadValue
+runHandler = runExceptT . getHandler
 
 -- | Generic failure
 errorFailed :: Handler a
