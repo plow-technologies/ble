@@ -169,6 +169,7 @@ getAllServices = do
       traceShowM uuid'
       properties'' :: [DBusValue (RepType T.Text)] <- unmakeAny =<< Map.lookup "Flags" dict
       let properties' = catMaybes $ fmap fromRep properties''
+
       traceShowM properties'
       let mrv = if any (`elem` readProps) properties'
             then Just $
