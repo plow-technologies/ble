@@ -3,8 +3,12 @@ module Main (main) where
 import Bluetooth
 import Data.Maybe
 {-import Control.Monad.IO.Class-}
-import qualified Data.ByteString.Char8 as BSC
 import Control.Concurrent
+import Data.Bits          (testBit)
+
+import qualified Data.ByteString       as BS
+{-import qualified Data.ByteString.Char8 as BSC-}
+import qualified Data.Serialize        as S
 
 import Debug.Trace
 
@@ -50,12 +54,33 @@ main = do
           {-measurement <- rmeasurement-}
           {-liftIO $ print measurement-}
 
-        Just (rmeasurement) -> do
-          {-liftIO $ putStrLn "Reading heart rate"-}
-          startNotify rmeasurement BSC.putStrLn
+        Just rmeasurement -> do
+          startNotify rmeasurement $ \x -> case deserializeMeasurement x of
+            Nothing -> putStrLn "Error decoding value"
+            Just v  -> putStrLn $ "Received Heart Rate: " ++ show v
           {-liftIO $ print measurement-}
 
+-- * Types
+
+-- Heart rate in bpm
+newtype HeartRate = HeartRate Integer
+  deriving (Eq, Show, Read)
+
+-- See https://www.bluetooth.com/specifications/gatt/viewer?attributeXmlFile=org.bluetooth.characteristic.heart_rate_measurement.xml
+deserializeMeasurement :: BS.ByteString -> Maybe HeartRate
+deserializeMeasurement bs = do
+  (flags, dat) <- BS.uncons bs
+  if testBit flags 0
+    -- Uses uint8
+    then HeartRate . toInteger . fst <$> BS.uncons dat
+    -- Uses uint16
+    else case S.decode $ BS.take 2 dat of
+      Left _ -> Nothing
+      Right v -> Just $ HeartRate v
+
 -- * Constants
+
+
 
 heartRateMeasurementUUID :: UUID
 heartRateMeasurementUUID = "00002a37-0000-1000-8000-00805f9b34fb"
