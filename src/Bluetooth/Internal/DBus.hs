@@ -3,6 +3,7 @@ module Bluetooth.Internal.DBus where
 import Control.Monad.Except
 import Control.Monad.Reader
 import Data.IORef           (readIORef, writeIORef)
+import Data.Maybe           (catMaybes)
 import Data.Monoid          ((<>))
 import DBus
 import DBus.Signal          (execSignalT)
@@ -19,6 +20,7 @@ import Bluetooth.Internal.Lenses
 import Bluetooth.Internal.Types
 import Bluetooth.Internal.Utils
 
+import Debug.Trace
 
 -- | Registers an application and advertises it. If you would like to have
 -- finer-grained control of the advertisement, use @registerApplication@ and
@@ -160,10 +162,14 @@ getAllServices = do
       -> Maybe (CharacteristicBS 'Remote)
     charFromRep charPath dict' = do
       dict :: Map.Map T.Text (DBusValue 'TypeVariant) <- fromRep dict'
+      traceShowM dict
       let unmakeAny :: (Representable a) => DBusValue 'TypeVariant -> Maybe a
           unmakeAny x = fromRep =<< fromVariant x
       uuid' :: UUID <- unmakeAny =<< Map.lookup "UUID" dict
-      properties' <- unmakeAny =<< Map.lookup "Flags" dict
+      traceShowM uuid'
+      properties'' :: [DBusValue (RepType T.Text)] <- unmakeAny =<< Map.lookup "Flags" dict
+      let properties' = catMaybes $ fmap fromRep properties''
+      traceShowM properties'
       let mrv = if any (`elem` readProps) properties'
             then Just $
               callMethodBM charPath gattCharacteristicIFace "ReadValue" ()
@@ -179,6 +185,7 @@ getAllServices = do
     mkChar charPath = do
       charProps  <- callMethodBM charPath propertiesIFace "GetAll"
         (T.pack gattCharacteristicIFace)
+      traceShowM charProps
       case charFromRep charPath charProps of
         Nothing -> throwError $ OtherError
           "Bluez returned invalid characteristic"
