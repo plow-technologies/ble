@@ -75,6 +75,12 @@ To see what version you are running, type:
 bluetoothd --version
 ```
 
+Note that for version 5.41 in particular you'll need to run `bluetoothd` with
+the experimental flag. (You might have to change `/lib/systemd/system/bluetooth.service`
+to add `--experimental` to the `ExecStart` command, and the restart the
+bluetoothd service)
+
+
 ### Contributing
 
 Note that quite a number of tests are protected by a flag (`hasDBus`). This is
