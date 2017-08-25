@@ -61,7 +61,3 @@ gdbus call --system -d org.bluez.Mock -o / \
 printf "ready\n"
 
 sleep 100000
-
-# scan
-# connect to device
-# scan
