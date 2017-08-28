@@ -3,21 +3,36 @@ module Main (main) where
 
 -- This example contains a demonstration of the standard Heart Rate Service
 -- (HRS). It serves as an examples of using notifications.
+--
+-- The program takes a command line argument to allow using controllers other
+-- than the default (hci0). If you have multiple controllers on a single
+-- machine (either hardware or virtual with something such as 'btvirt'), you
+-- can thus test this service with the heart-rate client executable.
 import Bluetooth
+import Bluetooth.Internal.Interfaces (bluezPath)
 import Control.Concurrent
 import Control.Monad
 import Control.Monad.IO.Class
 import Data.IORef
 import Data.Monoid
-import System.Random          (randomRIO)
+import Data.String                   (fromString)
+import Data.Word                     (Word8)
+import System.Environment            (getArgs)
 import System.Log.Logger
+import System.Random                 (randomRIO)
 
-import qualified Data.Serialize as S
 import qualified Data.ByteString as BS
+{-import qualified Data.Serialize  as S-}
 
 
 main :: IO ()
 main = do
+  args <- getArgs
+  let controller = case args of
+        [] -> "hci0"
+        [c] -> c
+        _ -> error "Expecting zero or one arguments"
+  writeIORef bluezPath $ fromString $ "/org/bluez/" ++ controller
   updateGlobalLogger rootLoggerName (setLevel DEBUG)
   heartRateRef <- newIORef 0
   let s = AppState heartRateRef
@@ -39,7 +54,7 @@ main = do
     threadDelay (10 ^ 7)
 
 data AppState = AppState
-  { currentHeartRate :: IORef Int
+  { currentHeartRate :: IORef Word8
   }
 
 app :: AppState -> Application
@@ -67,8 +82,8 @@ heartRateMeasurement appState
       writeIORef (currentHeartRate appState) v
       return True
 
-heartRateToBS :: Int -> BS.ByteString
-heartRateToBS i = "0x06" <> S.encode i
+heartRateToBS :: Word8 -> BS.ByteString
+heartRateToBS i = BS.singleton 0x06 <> BS.singleton i
 
 bodySensorLocation :: CharacteristicBS 'Local
 bodySensorLocation
