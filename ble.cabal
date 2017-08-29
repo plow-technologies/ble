@@ -3,7 +3,7 @@
 -- see: https://github.com/sol/hpack
 
 name:           ble
-version:        0.4.0.0
+version:        0.4.1
 synopsis:       Bluetooth Low Energy (BLE) peripherals
 description:    This package provides a Haskell API for writing Bluetooth Low Energy peripherals.
 stability:      alpha
@@ -131,7 +131,7 @@ executable hrs
     , data-default-class >= 0.0 && < 0.2
     , ble
     , hslogger
-    , optparse-applicative >= 0.13 && < 0.14
+    , optparse-applicative >= 0.12 && < 0.14
   if flag(hasDBus)
     cpp-options: -DDBusMock
   other-modules:
