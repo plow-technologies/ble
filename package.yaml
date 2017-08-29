@@ -126,6 +126,7 @@ executables:
     dependencies:
       - ble
       - hslogger
+      - optparse-applicative >= 0.12 && < 0.14
   auth:
     main:            Auth.hs
     source-dirs:     examples

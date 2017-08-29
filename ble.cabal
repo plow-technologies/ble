@@ -131,6 +131,7 @@ executable hrs
     , data-default-class >= 0.0 && < 0.2
     , ble
     , hslogger
+    , optparse-applicative >= 0.13 && < 0.14
   if flag(hasDBus)
     cpp-options: -DDBusMock
   other-modules:

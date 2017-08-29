@@ -17,23 +17,18 @@ import Data.IORef
 import Data.Monoid
 import Data.String                   (fromString)
 import Data.Word                     (Word8)
-import System.Environment            (getArgs)
 import System.Log.Logger
 import System.Random                 (randomRIO)
 
-import qualified Data.ByteString as BS
-{-import qualified Data.Serialize  as S-}
+import qualified Data.ByteString     as BS
+import qualified Options.Applicative as Opt
 
 
 main :: IO ()
 main = do
-  args <- getArgs
-  let controller = case args of
-        [] -> "hci0"
-        [c] -> c
-        _ -> error "Expecting zero or one arguments"
-  writeIORef bluezPath $ fromString $ "/org/bluez/" ++ controller
-  updateGlobalLogger rootLoggerName (setLevel DEBUG)
+  options <- Opt.execParser opts
+  writeIORef bluezPath $ fromString $ "/org/bluez/" ++ controller options
+  when (verbose options) $ updateGlobalLogger rootLoggerName (setLevel DEBUG)
   heartRateRef <- newIORef 0
   let s = AppState heartRateRef
   conn <- connect
@@ -56,6 +51,31 @@ main = do
 data AppState = AppState
   { currentHeartRate :: IORef Word8
   }
+
+data Options = Options
+  { controller :: String
+  , verbose    :: Bool
+  }
+
+opts :: Opt.ParserInfo Options
+opts = Opt.info
+  (parser Opt.<**> Opt.helper)
+  (  Opt.fullDesc
+  <> Opt.progDesc "Print a greeting for TARGET"
+  <> Opt.header "hello - a test for optparse-applicative" )
+
+parser :: Opt.Parser Options
+parser = Options
+  <$> Opt.strOption
+     ( Opt.long "controller"
+    <> Opt.metavar "HCIX"
+    <> Opt.showDefault
+    <> Opt.value "hci0"
+    <> Opt.help "Controller to use")
+  <*> Opt.switch
+     ( Opt.long "verbose"
+    <> Opt.short 'v'
+    <> Opt.help "Print debugging info to console")
 
 app :: AppState -> Application
 app appState
