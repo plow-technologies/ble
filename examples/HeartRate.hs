@@ -3,22 +3,32 @@ module Main (main) where
 
 -- This example contains a demonstration of the standard Heart Rate Service
 -- (HRS). It serves as an examples of using notifications.
+--
+-- The program takes a command line argument to allow using controllers other
+-- than the default (hci0). If you have multiple controllers on a single
+-- machine (either hardware or virtual with something such as 'btvirt'), you
+-- can thus test this service with the heart-rate client executable.
 import Bluetooth
+import Bluetooth.Internal.Interfaces (bluezPath)
 import Control.Concurrent
 import Control.Monad
 import Control.Monad.IO.Class
 import Data.IORef
 import Data.Monoid
-import System.Random          (randomRIO)
+import Data.String                   (fromString)
+import Data.Word                     (Word8)
 import System.Log.Logger
+import System.Random                 (randomRIO)
 
-import qualified Data.Serialize as S
-import qualified Data.ByteString as BS
+import qualified Data.ByteString     as BS
+import qualified Options.Applicative as Opt
 
 
 main :: IO ()
 main = do
-  updateGlobalLogger rootLoggerName (setLevel DEBUG)
+  options <- Opt.execParser opts
+  writeIORef bluezPath $ fromString $ "/org/bluez/" ++ controller options
+  when (verbose options) $ updateGlobalLogger rootLoggerName (setLevel DEBUG)
   heartRateRef <- newIORef 0
   let s = AppState heartRateRef
   conn <- connect
@@ -39,8 +49,33 @@ main = do
     threadDelay (10 ^ 7)
 
 data AppState = AppState
-  { currentHeartRate :: IORef Int
+  { currentHeartRate :: IORef Word8
   }
+
+data Options = Options
+  { controller :: String
+  , verbose    :: Bool
+  }
+
+opts :: Opt.ParserInfo Options
+opts = Opt.info
+  (parser Opt.<**> Opt.helper)
+  (  Opt.fullDesc
+  <> Opt.progDesc "Print a greeting for TARGET"
+  <> Opt.header "hello - a test for optparse-applicative" )
+
+parser :: Opt.Parser Options
+parser = Options
+  <$> Opt.strOption
+     ( Opt.long "controller"
+    <> Opt.metavar "HCIX"
+    <> Opt.showDefault
+    <> Opt.value "hci0"
+    <> Opt.help "Controller to use")
+  <*> Opt.switch
+     ( Opt.long "verbose"
+    <> Opt.short 'v'
+    <> Opt.help "Print debugging info to console")
 
 app :: AppState -> Application
 app appState
@@ -67,8 +102,8 @@ heartRateMeasurement appState
       writeIORef (currentHeartRate appState) v
       return True
 
-heartRateToBS :: Int -> BS.ByteString
-heartRateToBS i = "0x06" <> S.encode i
+heartRateToBS :: Word8 -> BS.ByteString
+heartRateToBS i = BS.singleton 0x06 <> BS.singleton i
 
 bodySensorLocation :: CharacteristicBS 'Local
 bodySensorLocation
