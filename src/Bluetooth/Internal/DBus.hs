@@ -1,18 +1,19 @@
 module Bluetooth.Internal.DBus where
 
+import Debug.Trace
+import Control.Monad.IO.Class
 import Control.Monad.Except
 import Control.Monad.Reader
 import Data.IORef           (readIORef, writeIORef)
 import Data.Maybe           (catMaybes)
 import Data.Monoid          ((<>))
-import DBus
+import DBus  
 import DBus.Signal          (execSignalT)
 import Lens.Micro
 
 import qualified Data.ByteString as BS
 import qualified Data.Map        as Map
 import qualified Data.Text       as T
-
 import Bluetooth.Internal.Errors
 import Bluetooth.Internal.HasInterface
 import Bluetooth.Internal.Interfaces
@@ -125,6 +126,7 @@ triggerNotification (ApplicationRegistered _) c = do
         Left e -> throwError . DBusError . MethodErrorMessage $ errorBody e
         Right val -> return val
 
+
 -- | Get a service by UUID. Returns Nothing if the service could not be found.
 getService :: UUID -> BluetoothM (Maybe (Service 'Remote))
 getService serviceUUID = do
@@ -134,16 +136,19 @@ getService serviceUUID = do
     -- This should never be a list with more than one element.
     (x:_) -> Just x
 
+
 -- | Get all registered services.
 getAllServices :: BluetoothM [Service 'Remote]
 getAllServices = do
   objects :: Map.Map ObjectPath (Map.Map T.Text (Map.Map T.Text DontCareFromRep))
     <- callMethodBM "/" objectManagerIFace "GetManagedObjects" ()
-
+  liftIO $ putStrLn "Objects..."  
+  liftIO $ print objects
   -- We need to construct services manually, since we get the characteristics
   -- separately.
   let chars =
        Map.keys $ Map.filter (T.pack gattCharacteristicIFace `Map.member`) objects
+  
   let servs =
        Map.keys $ Map.filter (T.pack gattServiceIFace `Map.member`) objects
   forM servs $ \s -> mkService s [ c | c <- chars , s  `isPathPrefix` c ]
@@ -197,7 +202,7 @@ getAllServices = do
     mkService :: ObjectPath -> [ObjectPath] -> BluetoothM (Service 'Remote)
     mkService servicePath charPaths = do
       serviceProps <- callMethodBM servicePath propertiesIFace "GetAll"
-        (T.pack gattServiceIFace)
+        (T.pack deviceIFace)
       chars <- mapM mkChar charPaths
       case serviceFromRep serviceProps of
         Nothing -> throwError $ OtherError
@@ -224,7 +229,6 @@ stopNotify char
   = callMethodBM (char ^. path) gattCharacteristicIFace "StopNotify" ()
 
 -- Helpers
-
 valRemoteProp :: CharacteristicBS 'Remote -> IO (RemoteProperty (RepType BS.ByteString))
 valRemoteProp char = do
   bluezName' <- readIORef bluezName
@@ -243,5 +247,5 @@ callMethodBM :: (Representable args, Representable ret)
   -> BluetoothM ret
 callMethodBM opath iface methodName args = do
   conn <- ask
-  bluezName' <- liftIO $ readIORef bluezName
-  toBluetoothM . const $ callMethod bluezName' opath (T.pack iface) methodName args [] (dbusConn conn)
+  bluezName' <- liftIO $ readIORef  bluezName
+  toBluetoothM . const $ callMethod bluezName' opath (T.pack iface) methodName args [] (dbusConn conn) 

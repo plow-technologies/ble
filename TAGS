@@ -1,0 +1,530 @@
+
+./src/Bluetooth/Internal/Interfaces.hs,2331
+module Bluetooth.Internal.Interfaces Bluetooth.Internal.Interfaces0,1
+type ObjectManager ObjectManager11,12
+objectManagerIFaceP objectManagerIFaceP13,14
+objectManagerIFaceP objectManagerIFaceP14,15
+objectManagerIFace objectManagerIFace16,17
+objectManagerIFace objectManagerIFace17,18
+type Properties Properties20,21
+propertiesIFaceP propertiesIFaceP22,23
+propertiesIFaceP propertiesIFaceP23,24
+propertiesIFace propertiesIFace25,26
+propertiesIFace propertiesIFace26,27
+type GattService GattService29,30
+type GenDevice GenDevice31,32
+deviceServiceIFaceP deviceServiceIFaceP34,35
+deviceServiceIFaceP deviceServiceIFaceP35,36
+deviceServiceIFace deviceServiceIFace37,38
+deviceServiceIFace deviceServiceIFace38,39
+gattServiceIFaceP gattServiceIFaceP41,42
+gattServiceIFaceP gattServiceIFaceP42,43
+gattServiceIFace gattServiceIFace44,45
+gattServiceIFace gattServiceIFace45,46
+type GattCharacteristic GattCharacteristic47,48
+gattCharacteristicIFaceP gattCharacteristicIFaceP49,50
+gattCharacteristicIFaceP gattCharacteristicIFaceP50,51
+gattCharacteristicIFace gattCharacteristicIFace52,53
+gattCharacteristicIFace gattCharacteristicIFace53,54
+type GattManager GattManager56,57
+gattManagerIFaceP gattManagerIFaceP58,59
+gattManagerIFaceP gattManagerIFaceP59,60
+gattManagerIFace gattManagerIFace61,62
+gattManagerIFace gattManagerIFace62,63
+type LEAdvertisement LEAdvertisement65,66
+leAdvertisementIFaceP leAdvertisementIFaceP67,68
+leAdvertisementIFaceP leAdvertisementIFaceP68,69
+leAdvertisementIFace leAdvertisementIFace70,71
+leAdvertisementIFace leAdvertisementIFace71,72
+type LEAdvertisingManager1 LEAdvertisingManager174,75
+leAdvertisingManagerIFaceP leAdvertisingManagerIFaceP76,77
+leAdvertisingManagerIFaceP leAdvertisingManagerIFaceP77,78
+leAdvertisingManagerIFace leAdvertisingManagerIFace79,80
+leAdvertisingManagerIFace leAdvertisingManagerIFace80,81
+type Device1 Device182,83
+deviceIFaceP deviceIFaceP84,85
+deviceIFaceP deviceIFaceP85,86
+deviceIFace deviceIFace87,88
+deviceIFace deviceIFace88,89
+invalidArgs invalidArgs92,93
+invalidArgs invalidArgs93,94
+notSupported notSupported99,100
+notSupported notSupported100,101
+bluezName bluezName109,110
+bluezName bluezName110,111
+bluezPath bluezPath113,114
+bluezPath bluezPath114,115
+
+./src/Bluetooth/Internal/DBus.hs,1165
+module Bluetooth.Internal.DBus Bluetooth.Internal.DBus0,1
+registerAndAdvertiseApplication registerAndAdvertiseApplication27,28
+registerAndAdvertiseApplication registerAndAdvertiseApplication28,29
+registerApplication registerApplication34,35
+registerApplication registerApplication35,36
+unregisterApplication unregisterApplication45,46
+unregisterApplication unregisterApplication46,47
+addAllObjs addAllObjs53,54
+addAllObjs addAllObjs54,55
+advertise advertise73,74
+advertise advertise74,75
+unadvertise unadvertise87,88
+unadvertise unadvertise88,89
+advertisementFor advertisementFor98,99
+advertisementFor advertisementFor99,100
+triggerNotification triggerNotification106,107
+triggerNotification triggerNotification107,108
+getService getService130,131
+getService getService131,132
+getAllServices getAllServices140,141
+getAllServices getAllServices141,142
+startNotify startNotify213,214
+startNotify startNotify216,217
+stopNotify stopNotify226,227
+stopNotify stopNotify227,228
+valRemoteProp valRemoteProp231,232
+valRemoteProp valRemoteProp232,233
+callMethodBM callMethodBM241,242
+callMethodBM callMethodBM247,248
+
+./src/Bluetooth/Internal/Serialize.hs,187
+module Bluetooth.Internal.Serialize Bluetooth.Internal.Serialize1,2
+encodeRead encodeRead8,9
+encodeRead encodeRead9,10
+encodeWrite encodeWrite11,12
+encodeWrite encodeWrite13,14
+
+./src/Bluetooth/Internal/flycheck_DBus.hs,1165
+module Bluetooth.Internal.DBus Bluetooth.Internal.DBus0,1
+registerAndAdvertiseApplication registerAndAdvertiseApplication27,28
+registerAndAdvertiseApplication registerAndAdvertiseApplication28,29
+registerApplication registerApplication34,35
+registerApplication registerApplication35,36
+unregisterApplication unregisterApplication45,46
+unregisterApplication unregisterApplication46,47
+addAllObjs addAllObjs53,54
+addAllObjs addAllObjs54,55
+advertise advertise73,74
+advertise advertise74,75
+unadvertise unadvertise87,88
+unadvertise unadvertise88,89
+advertisementFor advertisementFor98,99
+advertisementFor advertisementFor99,100
+triggerNotification triggerNotification106,107
+triggerNotification triggerNotification107,108
+getService getService130,131
+getService getService131,132
+getAllServices getAllServices140,141
+getAllServices getAllServices141,142
+startNotify startNotify213,214
+startNotify startNotify216,217
+stopNotify stopNotify226,227
+stopNotify stopNotify227,228
+valRemoteProp valRemoteProp231,232
+valRemoteProp valRemoteProp232,233
+callMethodBM callMethodBM241,242
+callMethodBM callMethodBM247,248
+
+./src/Bluetooth/Internal/Utils.hs,247
+module Bluetooth.Internal.Utils Bluetooth.Internal.Utils0,1
+class ToText ToText7,8
+class ToText ToText7,8
+  toText toText8,9
+instance instance10,11
+class FromText FromText13,14
+class FromText FromText13,14
+  fromText fromText14,15
+
+./src/Bluetooth/Internal/HasInterface.hs,686
+module Bluetooth.Internal.HasInterface Bluetooth.Internal.HasInterface0,1
+class KnownSymbol iface => HasInterface HasInterface33,34
+class KnownSymbol iface => HasInterface HasInterface33,34
+  getInterface getInterface34,35
+withInterface withInterface36,37
+withInterface withInterface37,38
+instance instance44,45
+type ChangedProperties ChangedProperties67,68
+defPropIFace defPropIFace75,76
+defPropIFace defPropIFace80,81
+acceptingOptions acceptingOptions167,168
+acceptingOptions acceptingOptions170,171
+handlerToMethodHandler handlerToMethodHandler174,175
+handlerToMethodHandler handlerToMethodHandler175,176
+valProp valProp274,275
+valProp valProp276,277
+
+./src/Bluetooth/Internal/Errors.hs,735
+module Bluetooth.Internal.Errors Bluetooth.Internal.Errors7,8
+newtype Handler Handler13,14
+  = Handler Handler14,15
+  = Handler { getHandler getHandler14,15
+runHandler runHandler17,18
+runHandler runHandler18,19
+errorFailed errorFailed21,22
+errorFailed errorFailed22,23
+errorInProgress errorInProgress24,25
+errorInProgress errorInProgress25,26
+errorNotPermitted errorNotPermitted27,28
+errorNotPermitted errorNotPermitted28,29
+errorNotAuthorized errorNotAuthorized30,31
+errorNotAuthorized errorNotAuthorized31,32
+errorNotSupported errorNotSupported33,34
+errorNotSupported errorNotSupported34,35
+errorInvalidValueLength errorInvalidValueLength38,39
+errorInvalidValueLength errorInvalidValueLength39,40
+
+./src/Bluetooth/Internal/Lenses.hs,1694
+module Bluetooth.Internal.Lenses Bluetooth.Internal.Lenses0,1
+class HasPath HasPath4,5
+class HasPath HasPath4,5
+  path path6,7
+class HasValue HasValue7,8
+class HasValue HasValue7,8
+  value value9,10
+class HasOffset HasOffset10,11
+class HasOffset HasOffset10,11
+  offset offset12,13
+class HasProperties HasProperties13,14
+class HasProperties HasProperties13,14
+  properties properties15,16
+class HasReadValue HasReadValue16,17
+class HasReadValue HasReadValue16,17
+  readValue readValue18,19
+class HasWriteValue HasWriteValue19,20
+class HasWriteValue HasWriteValue19,20
+  writeValue writeValue22,23
+class HasUuid HasUuid23,24
+class HasUuid HasUuid23,24
+  uuid uuid25,26
+class HasCharacteristics HasCharacteristics26,27
+class HasCharacteristics HasCharacteristics26,27
+  characteristics characteristics28,29
+class HasServices HasServices29,30
+class HasServices HasServices29,30
+  services services31,32
+class HasIncludeTxPower HasIncludeTxPower32,33
+class HasIncludeTxPower HasIncludeTxPower32,33
+  includeTxPower includeTxPower35,36
+class HasManufacturerData HasManufacturerData36,37
+class HasManufacturerData HasManufacturerData36,37
+  manufacturerData manufacturerData38,39
+class HasServiceData HasServiceData39,40
+class HasServiceData HasServiceData39,40
+  serviceData serviceData41,42
+class HasServiceUUIDs HasServiceUUIDs42,43
+class HasServiceUUIDs HasServiceUUIDs42,43
+  serviceUUIDs serviceUUIDs44,45
+class HasSolicitUUIDs HasSolicitUUIDs45,46
+class HasSolicitUUIDs HasSolicitUUIDs45,46
+  solicitUUIDs solicitUUIDs48,49
+class HasType_ HasType_49,50
+class HasType_ HasType_49,50
+  type_ type_50,51
+
+./src/Bluetooth/Internal/Types.hs,5235
+module Bluetooth.Internal.Types Bluetooth.Internal.Types9,10
+(</>)</>48,49
+  | "/" `T.isSuffixOf`T.isSuffixOf50,51
+parentPath parentPath54,55
+parentPath parentPath55,56
+data Location Location64,65
+data Location = Local Local64,65
+data Location = Local | RemoteRemote64,65
+data UUIDUUID81,82
+  = UUID UUID82,83
+baseUUID baseUUID85,86
+baseUUID baseUUID86,87
+instance instance88,89
+data Any Any118,119
+  MkAny MkAny119,120
+  MkAny MkAny119,120
+data WithObjectPath WithObjectPath127,128
+data WithObjectPath a = WOPWOP127,128
+  { withObjectPathPath withObjectPathPath128,129
+  , withObjectPathValue withObjectPathValue129,130
+data DontCareFromRep DontCareFromRep141,142
+data DontCareFromRep = DontCareFromRepDontCareFromRep141,142
+type AnyDBusDict AnyDBusDict149,150
+data Descriptor Descriptor153,154
+data Descriptor = DescriptorDescriptor153,154
+  { descriptorUuid descriptorUuid154,155
+data AdvertisingPacketTypeAdvertisingPacketType158,159
+  = ConnectableUndirectedConnectableUndirected159,160
+  | ConnectableDirectedConnectableDirected160,161
+  | NonConnnectableUndirectedNonConnnectableUndirected161,162
+  | ScannableUndirectedScannableUndirected162,163
+data CharacteristicPropertyCharacteristicProperty167,168
+  = CPBroadcastCPBroadcast168,169
+  | CPReadCPRead169,170
+  | CPEncryptReadCPEncryptRead170,171
+  | CPEncryptAuthenticatedReadCPEncryptAuthenticatedRead171,172
+  | CPWriteWithoutResponseCPWriteWithoutResponse172,173
+  | CPWriteCPWrite173,174
+  | CPEncryptWriteCPEncryptWrite174,175
+  | CPEncryptAuthenticatedWriteCPEncryptAuthenticatedWrite175,176
+  | CPAuthenticatedSignedWritesCPAuthenticatedSignedWrites176,177
+  | CPNotifyCPNotify177,178
+  | CPIndicateCPIndicate178,179
+chrPropPairs chrPropPairs190,191
+chrPropPairs chrPropPairs191,192
+data CharacteristicOptions CharacteristicOptions205,206
+data CharacteristicOptions = CharacteristicOptionsCharacteristicOptions205,206
+  { characteristicOptionsOffset characteristicOptionsOffset206,207
+type CharacteristicBS CharacteristicBS225,226
+type CharacteristicBS m m225,226
+data Characteristic Characteristic227,228
+data Characteristic (loc loc227,228
+  LocalChar LocalChar228,229
+    { characteristicLUuid characteristicLUuid229,230
+    , characteristicLProperties characteristicLProperties230,231
+    , characteristicLReadValue characteristicLReadValue231,232
+    , characteristicLWriteValue characteristicLWriteValue232,233
+  RemoteChar RemoteChar234,235
+    { characteristicRUuid characteristicRUuid235,236
+    , characteristicRProperties characteristicRProperties236,237
+    , characteristicRReadValue characteristicRReadValue237,238
+    , characteristicRWriteValue characteristicRWriteValue238,239
+    , characteristicRPath characteristicRPath239,240
+data Characteristic (loc loc227,228
+characteristicIsNotifying characteristicIsNotifying282,283
+characteristicIsNotifying characteristicIsNotifying283,284
+objectPathOf objectPathOf296,297
+objectPathOf objectPathOf297,298
+characteristicObjectPath characteristicObjectPath323,324
+characteristicObjectPath characteristicObjectPath324,325
+data Service Service336,337
+data Service m = ServiceService336,337
+  { serviceUuid serviceUuid337,338
+  , serviceCharacteristics serviceCharacteristics338,339
+data Application Application378,379
+data Application = ApplicationApplication378,379
+  { applicationPath applicationPath379,380
+  , applicationServices applicationServices380,381
+serviceObjectPath serviceObjectPath417,418
+serviceObjectPath serviceObjectPath418,419
+data AdvertisementType AdvertisementType428,429
+data AdvertisementType = Broadcast Broadcast428,429
+data AdvertisementType = Broadcast | PeripheralPeripheral428,429
+data Advertisement Advertisement443,444
+data Advertisement = AdvertisementAdvertisement443,444
+  { advertisementType_ advertisementType_444,445
+  , advertisementServiceUUIDs advertisementServiceUUIDs445,446
+  , advertisementSolicitUUIDs advertisementSolicitUUIDs446,447
+  , advertisementManufacturerData advertisementManufacturerData447,448
+  , advertisementServiceData advertisementServiceData448,449
+  , advertisementIncludeTxPower advertisementIncludeTxPower449,450
+data Device Device537,538
+data Device = DeviceDevice537,538
+  { devicePath devicePath538,539
+data Connection Connection557,558
+data Connection = ConnectionConnection557,558
+  { dbusConn dbusConn558,559
+  , addObject addObject560,561
+connectionName connectionName568,569
+connectionName connectionName569,570
+connect connect574,575
+connect connect575,576
+data ErrorError585,586
+  = DBusError DBusError586,587
+  | BLEError BLEError587,588
+  | OtherError OtherError588,589
+newtype BluetoothM BluetoothM594,595
+  = BluetoothM BluetoothM595,596
+runBluetoothM runBluetoothM599,600
+runBluetoothM runBluetoothM600,601
+toBluetoothM toBluetoothM602,603
+toBluetoothM toBluetoothM603,604
+newtype ApplicationRegistered ApplicationRegistered611,612
+newtype ApplicationRegistered = ApplicationRegistered ApplicationRegistered611,612
+data StatusStatus614,615
+  = SuccessSuccess615,616
+  | FailureFailure616,617
+
+./src/Bluetooth/Internal/DBus_flymake.hs,1165
+module Bluetooth.Internal.DBus Bluetooth.Internal.DBus0,1
+registerAndAdvertiseApplication registerAndAdvertiseApplication27,28
+registerAndAdvertiseApplication registerAndAdvertiseApplication28,29
+registerApplication registerApplication34,35
+registerApplication registerApplication35,36
+unregisterApplication unregisterApplication45,46
+unregisterApplication unregisterApplication46,47
+addAllObjs addAllObjs53,54
+addAllObjs addAllObjs54,55
+advertise advertise73,74
+advertise advertise74,75
+unadvertise unadvertise87,88
+unadvertise unadvertise88,89
+advertisementFor advertisementFor98,99
+advertisementFor advertisementFor99,100
+triggerNotification triggerNotification106,107
+triggerNotification triggerNotification107,108
+getService getService130,131
+getService getService131,132
+getAllServices getAllServices140,141
+getAllServices getAllServices141,142
+startNotify startNotify213,214
+startNotify startNotify216,217
+stopNotify stopNotify226,227
+stopNotify stopNotify227,228
+valRemoteProp valRemoteProp231,232
+valRemoteProp valRemoteProp232,233
+callMethodBM callMethodBM241,242
+callMethodBM callMethodBM247,248
+
+./src/Bluetooth/Internal/Device.hs,1021
+module Bluetooth.Internal.Device Bluetooth.Internal.Device0,1
+getAllDevices getAllDevices21,22
+getAllDevices getAllDevices22,23
+connectTo connectTo37,38
+connectTo connectTo38,39
+disconnectFrom disconnectFrom41,42
+disconnectFrom disconnectFrom42,43
+isConnected isConnected45,46
+isConnected isConnected46,47
+pairWith pairWith49,50
+pairWith pairWith50,51
+isPaired isPaired53,54
+isPaired isPaired54,55
+trust trust57,58
+trust trust58,59
+distrust distrust61,62
+distrust distrust62,63
+isTrusted isTrusted65,66
+isTrusted isTrusted66,67
+getDeviceServiceUUIDs getDeviceServiceUUIDs68,69
+getDeviceServiceUUIDs getDeviceServiceUUIDs69,70
+callDeviceMethod callDeviceMethod74,75
+callDeviceMethod callDeviceMethod75,76
+setDeviceProperty setDeviceProperty82,83
+setDeviceProperty setDeviceProperty83,84
+getDeviceProperty getDeviceProperty90,91
+getDeviceProperty getDeviceProperty91,92
+deviceRemoteProperty deviceRemoteProperty98,99
+deviceRemoteProperty deviceRemoteProperty99,100
+
+./src/Bluetooth.hs,33
+module BluetoothBluetooth46,47
+
+./test/Bluetooth/TypesSpec.hs,364
+module Bluetooth.TypesSpec Bluetooth.TypesSpec1,2
+spec spec18,19
+spec spec19,20
+uuidSpec uuidSpec24,25
+uuidSpec uuidSpec25,26
+parentPathSpec parentPathSpec43,44
+parentPathSpec parentPathSpec44,45
+chrPropPairsSpec chrPropPairsSpec50,51
+chrPropPairsSpec chrPropPairsSpec51,52
+fromRepToRepInverse fromRepToRepInverse67,68
+instance instance73,74
+
+./test/Spec.hs,0
+
+./test/Doctest.hs,183
+module Main Main0,1
+newtype Exts Exts11,12
+newtype Exts = Exts Exts11,12
+newtype Exts = Exts { getExts getExts11,12
+instance instance14,15
+main main18,19
+main main19,20
+
+./test/BluetoothSpec.hs,1054
+module BluetoothSpec BluetoothSpec9,10
+spec spec25,26
+spec spec26,27
+registerApplicationSpec registerApplicationSpec40,41
+registerApplicationSpec registerApplicationSpec41,42
+unregisterApplicationSpec unregisterApplicationSpec52,53
+unregisterApplicationSpec unregisterApplicationSpec53,54
+advertiseSpec advertiseSpec63,64
+advertiseSpec advertiseSpec64,65
+unadvertiseSpec unadvertiseSpec87,88
+unadvertiseSpec unadvertiseSpec88,89
+getServiceSpec getServiceSpec100,101
+getServiceSpec getServiceSpec101,102
+getAllServicesSpec getAllServicesSpec136,137
+getAllServicesSpec getAllServicesSpec137,138
+getAllDevicesSpec getAllDevicesSpec143,144
+getAllDevicesSpec getAllDevicesSpec144,145
+testApp testApp179,180
+testApptestApp180,181
+testService testService184,185
+testServicetestService185,186
+testCharacteristic testCharacteristic189,190
+testCharacteristictestCharacteristic190,191
+testAdv testAdv200,201
+testAdvtestAdv201,202
+fromRight fromRight206,207
+fromRight fromRight207,208
+instance instance212,213
+
+./test/Main.hs,53
+module Main Main0,1
+main main8,9
+main main9,10
+
+./test/Mock.hs,301
+module Mock Mock0,1
+withAService withAService9,10
+withAService withAService10,11
+mockServiceUUID mockServiceUUID23,24
+mockServiceUUID mockServiceUUID24,25
+mockCharUUID mockCharUUID26,27
+mockCharUUID mockCharUUID27,28
+mockCharValue mockCharValue29,30
+mockCharValue mockCharValue30,31
+
+./examples/README.lhs,0
+
+./examples/HeartRateClient.hs,432
+module Main Main2,3
+michaelsLaptop michaelsLaptop19,20
+michaelsLaptop michaelsLaptop20,21
+main main22,23
+main main23,24
+newtype HeartRate HeartRate63,64
+newtype HeartRate = HeartRate HeartRate63,64
+deserializeMeasurement deserializeMeasurement67,68
+deserializeMeasurement deserializeMeasurement68,69
+heartRateMeasurementUUID heartRateMeasurementUUID79,80
+heartRateMeasurementUUID heartRateMeasurementUUID80,81
+
+./examples/HeartRate.hs,749
+module Main Main1,2
+main main26,27
+main main27,28
+data AppState AppState50,51
+data AppState = AppStateAppState50,51
+  { currentHeartRate currentHeartRate51,52
+data Options Options54,55
+data Options = OptionsOptions54,55
+  { controller controller55,56
+  , verbose verbose56,57
+opts opts59,60
+opts opts60,61
+parser parser66,67
+parser parser67,68
+app app79,80
+app app80,81
+heartRateService heartRateService84,85
+heartRateService heartRateService85,86
+heartRateMeasurement heartRateMeasurement89,90
+heartRateMeasurement heartRateMeasurement90,91
+heartRateToBS heartRateToBS106,107
+heartRateToBS heartRateToBS107,108
+bodySensorLocation bodySensorLocation109,110
+bodySensorLocationbodySensorLocation110,111
+
+./examples/Auth.hs,159
+module Main Main0,1
+main main17,18
+main main18,19
+app app27,28
+appapp28,29
+auth auth32,33
+authauth33,34
+secret secret37,38
+secretsecret38,39
+
+./Setup.hs,15
+main main1,2

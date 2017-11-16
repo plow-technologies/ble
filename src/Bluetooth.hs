@@ -65,6 +65,7 @@ module Bluetooth
   , getAllServices
   , getService
 
+
   -- ** Notifications
   , startNotify
   , stopNotify
@@ -107,6 +108,7 @@ module Bluetooth
   , Application
   , ApplicationRegistered
   , Service
+  , serviceUuid
   , UUID(UUID)
   , CharacteristicProperty(..)
   , Characteristic

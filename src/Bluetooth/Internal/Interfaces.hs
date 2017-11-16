@@ -29,6 +29,16 @@ propertiesIFace = symbolVal propertiesIFaceP
 
 type GattService = "org.bluez.GattService1"
 
+type GenDevice   = "org.bluez.Device1"
+
+
+deviceServiceIFaceP :: Proxy GenDevice
+deviceServiceIFaceP = Proxy 
+
+deviceServiceIFace :: String 
+deviceServiceIFace = symbolVal deviceIFaceP
+
+
 gattServiceIFaceP :: Proxy GattService
 gattServiceIFaceP = Proxy
 

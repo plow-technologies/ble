@@ -39,12 +39,12 @@ main = do
       return registered
     Left e -> error $ "Error starting application" ++ show e
   forever $ do
-    newValue <- randomRIO (50, 150)
-    writeIORef heartRateRef newValue
-    res <- runBluetoothM (triggerNotification registered $ heartRateMeasurement s) conn
-    case res of
-      Right ()  -> putStrLn "Notification sent!"
-      Left  e     -> error $ "Bluetooth error:\n" ++ show e
+--    newValue <- randomRIO (50, 150)
+--    writeIORef heartRateRef newValue
+--    res <- runBluetoothM (triggerNotification registered $ heartRateMeasurement s) conn
+--    case res of
+--      Right ()  -> putStrLn "Notification sent!"
+--      Left  e     -> error $ "Bluetooth error:\n" ++ show e
     -- We update the value every ten seconds
     threadDelay (10 ^ 7)
 
@@ -90,16 +90,18 @@ heartRateService appState
 heartRateMeasurement :: AppState -> CharacteristicBS 'Local
 heartRateMeasurement appState
   = "00002a37-0000-1000-8000-00805f9b34fb"
+     & writeValue ?~ encodeWrite (liftIO <$> write)
      & readValue ?~ fmap heartRateToBS (liftIO . readIORef $ currentHeartRate appState)
      -- Even though we add a @writeValue@, this does not mean that the
      -- characteristic is writable (for that, we would need to add the CPWrite
      -- property to it). Instead, we can use the writeValue internally to
      -- update the value and send notifications each time the value is changed.
-     & writeValue ?~ encodeWrite (liftIO <$> write)
-     & properties .~ [CPNotify, CPRead]
+     
+     & properties .~ [CPWrite, CPRead]
   where
     write v = do
       writeIORef (currentHeartRate appState) v
+      print v
       return True
 
 heartRateToBS :: Word8 -> BS.ByteString
