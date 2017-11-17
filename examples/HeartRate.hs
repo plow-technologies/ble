@@ -90,16 +90,22 @@ heartRateService appState
 heartRateMeasurement :: AppState -> CharacteristicBS 'Local
 heartRateMeasurement appState
   = "00002a37-0000-1000-8000-00805f9b34fb"
-     & readValue ?~ fmap heartRateToBS (liftIO . readIORef $ currentHeartRate appState)
+     & readValue ?~ fmap heartRateToBS (liftIO readV)
      -- Even though we add a @writeValue@, this does not mean that the
      -- characteristic is writable (for that, we would need to add the CPWrite
      -- property to it). Instead, we can use the writeValue internally to
      -- update the value and send notifications each time the value is changed.
      & writeValue ?~ encodeWrite (liftIO <$> write)
-     & properties .~ [CPNotify, CPRead]
+     & properties .~ [ CPNotify, CPRead, CPWrite ]
   where
+    readV = do
+      putStrLn "Reading value"
+      readIORef $ currentHeartRate appState
+
     write v = do
+      putStrLn "Received value"
       writeIORef (currentHeartRate appState) v
+      putStrLn "Wrote value"
       return True
 
 heartRateToBS :: Word8 -> BS.ByteString
