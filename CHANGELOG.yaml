@@ -1,4 +1,9 @@
-upcoming: []
+upcoming:
+
+      - description: Fix writes
+        authors: jkarni
+        pr: 21
+        date: 2017-12-05
 
 releases:
 
