@@ -1,11 +1,13 @@
-upcoming:
+upcoming: []
+
+releases:
+
+  - version: "0.4.2"
 
       - description: Fix writes
         authors: jkarni
         pr: 21
         date: 2017-12-05
-
-releases:
 
   - version: "0.4.1"
     changes:

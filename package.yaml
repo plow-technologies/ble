@@ -1,5 +1,5 @@
 name:                ble
-version:             0.4.1
+version:             0.4.2
 synopsis:            Bluetooth Low Energy (BLE) peripherals
 description:         >
     This package provides a Haskell API for writing Bluetooth Low Energy
