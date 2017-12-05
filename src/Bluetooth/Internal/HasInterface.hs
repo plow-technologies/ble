@@ -204,10 +204,12 @@ instance HasInterface (WithObjectPath (CharacteristicBS 'Local)) GattCharacteris
 
       writeVal = case char ^. value . writeValue of
         Just w -> Method (repMethod $ go w)
-                          "WriteValue" ("arg" :> Done) ("rep" :> Done)
+                          "WriteValue" ("arg" :> "options" :> Done) ("rep" :> Done)
         Nothing -> Method (repMethod notSup) "WriteValue" Done Done
         where
-          go writeTheVal newVal = do
+          go :: (BS.ByteString -> Handler Bool)
+             -> BS.ByteString -> CharacteristicOptions -> MethodHandlerT IO Bool
+          go writeTheVal newVal _opts = do
             res <- handlerToMethodHandler $ writeTheVal newVal
             nots <- liftIO $ readMVar $
               characteristicIsNotifying (char ^. value . uuid)

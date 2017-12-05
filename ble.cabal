@@ -1,4 +1,4 @@
--- This file has been generated from package.yaml by hpack version 0.17.0.
+-- This file has been generated from package.yaml by hpack version 0.17.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -114,7 +114,7 @@ executable hrs
   hs-source-dirs:
       examples
   default-extensions: AutoDeriveTypeable ConstraintKinds DataKinds DefaultSignatures DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable FlexibleContexts FlexibleInstances FunctionalDependencies GADTs KindSignatures MultiParamTypeClasses OverloadedStrings RankNTypes ScopedTypeVariables TypeFamilies TypeOperators
-  ghc-options: -Wall
+  ghc-options: -Wall -threaded
   build-depends:
       base >= 4.8 && < 4.10
     , bytestring >= 0.10 && < 0.11
@@ -145,7 +145,7 @@ executable hrs-client
   hs-source-dirs:
       examples
   default-extensions: AutoDeriveTypeable ConstraintKinds DataKinds DefaultSignatures DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable FlexibleContexts FlexibleInstances FunctionalDependencies GADTs KindSignatures MultiParamTypeClasses OverloadedStrings RankNTypes ScopedTypeVariables TypeFamilies TypeOperators
-  ghc-options: -Wall
+  ghc-options: -Wall -threaded
   build-depends:
       base >= 4.8 && < 4.10
     , bytestring >= 0.10 && < 0.11

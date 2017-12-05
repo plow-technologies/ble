@@ -123,6 +123,7 @@ executables:
   hrs:
     main:            HeartRate.hs
     source-dirs:     examples
+    ghc-options:     -threaded
     dependencies:
       - ble
       - hslogger
@@ -135,5 +136,6 @@ executables:
   hrs-client:
     main:            HeartRateClient.hs
     source-dirs:     examples
+    ghc-options:     -threaded
     dependencies:
       - ble
