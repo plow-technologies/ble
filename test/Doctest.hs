@@ -1,4 +1,4 @@
-module Main (main) where
+module Doctest (main) where
 
 -- Runs doctest on all files in "src" dir. Assumes:
 --   (a) You are using hpack

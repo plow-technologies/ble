@@ -96,6 +96,12 @@ tests:
   spec:
     main:            Main.hs
     source-dirs:     test
+    other-modules:
+      - Bluetooth.TypesSpec
+      - BluetoothSpec
+      - Mock
+      - Spec
+      - Paths_ble
     dependencies:
       - ble
       - hspec > 2 && < 3
@@ -103,13 +109,16 @@ tests:
       - quickcheck-instances >= 0.3 && < 0.4
       - process >= 1.2 && < 1.5
       - hslogger
-#   doctest:
-#     main:            Doctest.hs
-#     source-dirs:     test
-#     dependencies:
-#       - doctest >= 0.9 && < 0.12
-#       - Glob >= 0.7 && < 0.8
-#       - yaml == 0.8.*
+  doctest:
+    main:            Doctest.hs
+    source-dirs:     test
+    ghc-options:     -main-is Doctest
+    other-modules:   []
+    dependencies:
+      - doctest >= 0.9 && < 0.12
+      - Glob >= 0.7 && < 0.8
+      - yaml == 0.8.*
+      - filepath
 
 executables:
   readme:

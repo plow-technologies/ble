@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2eaf7b48d485892509d025b3573af73d212bf5d4cf8b7188580eaf6e00ddd6a6
+-- hash: e84816ecce58303c3c92194095e508043f72b435f98d5d844393572a38db85b6
 
 name:           ble
 version:        0.4.2
@@ -189,13 +189,41 @@ executable readme
     cpp-options: -DDBusMock
   default-language: Haskell2010
 
+test-suite doctest
+  type: exitcode-stdio-1.0
+  main-is: Doctest.hs
+  hs-source-dirs:
+      test
+  default-extensions: AutoDeriveTypeable ConstraintKinds DataKinds DefaultSignatures DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable FlexibleContexts FlexibleInstances FunctionalDependencies GADTs KindSignatures MultiParamTypeClasses OverloadedStrings RankNTypes ScopedTypeVariables TypeFamilies TypeOperators
+  ghc-options: -Wall -main-is Doctest
+  build-depends:
+      Glob >=0.7 && <0.8
+    , base >=4.8 && <4.10
+    , bytestring >=0.10 && <0.11
+    , cereal >=0.4 && <0.6
+    , containers >=0.5 && <0.6
+    , d-bus >=0.1.5 && <0.2
+    , data-default-class >=0.0 && <0.2
+    , doctest >=0.9 && <0.12
+    , filepath
+    , microlens >=0.4 && <0.5
+    , microlens-ghc >=0.4 && <0.5
+    , mtl >=2.2 && <2.3
+    , random >=1 && <2
+    , text >=1 && <2
+    , transformers >=0.4 && <0.6
+    , uuid >=1 && <2
+    , yaml ==0.8.*
+  if flag(hasDBus)
+    cpp-options: -DDBusMock
+  default-language: Haskell2010
+
 test-suite spec
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
       Bluetooth.TypesSpec
       BluetoothSpec
-      Doctest
       Mock
       Spec
       Paths_ble
