@@ -1,10 +1,13 @@
+resolver: lts-13.2
+allow-newer: true
 flags:
   ble:
     hasDBus: true
 extra-package-dbs: []
 packages:
 - '.'
+- location:
+    git: 'https://github.com/afcady/d-bus/'
+    commit: '2dd54818eca2a2af9a9688f648d00cc1325df838'
+  extra-dep: true
 extra-deps:
-- d-bus-0.1.6
-- xml-picklers-0.3.6
-resolver: lts-8.13

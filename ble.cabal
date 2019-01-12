@@ -1,6 +1,10 @@
--- This file has been generated from package.yaml by hpack version 0.17.1.
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.1.
 --
 -- see: https://github.com/sol/hpack
+--
+-- hash: 2eaf7b48d485892509d025b3573af73d212bf5d4cf8b7188580eaf6e00ddd6a6
 
 name:           ble
 version:        0.4.2
@@ -16,14 +20,11 @@ license:        BSD3
 license-file:   LICENSE
 tested-with:    GHC == 7.10.3, GHC == 8.0.1
 build-type:     Simple
-cabal-version:  >= 1.10
-
 extra-source-files:
-    LICENSE
-    package.yaml
     README.md
+    package.yaml
+    LICENSE
     test/Mock/requirements.txt
-
 data-files:
     test/Mock/start_mock.sh
 
@@ -34,7 +35,7 @@ source-repository head
 flag bluez543
   description: Bluez version 5.43 or greater
   manual: True
-  default: False
+  default: True
 
 flag hasBluez
   description: Whether to run tests that require Bluez
@@ -47,26 +48,6 @@ flag hasDBus
   default: False
 
 library
-  hs-source-dirs:
-      src
-  default-extensions: AutoDeriveTypeable ConstraintKinds DataKinds DefaultSignatures DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable FlexibleContexts FlexibleInstances FunctionalDependencies GADTs KindSignatures MultiParamTypeClasses OverloadedStrings RankNTypes ScopedTypeVariables TypeFamilies TypeOperators
-  ghc-options: -Wall
-  build-depends:
-      base >= 4.8 && < 4.10
-    , bytestring >= 0.10 && < 0.11
-    , text >= 1 && < 2
-    , d-bus >= 0.1.5 && < 0.2
-    , uuid >= 1 && < 2
-    , mtl >= 2.2 && < 2.3
-    , transformers >= 0.4 && < 0.6
-    , containers >= 0.5 && < 0.6
-    , random >= 1 && < 2
-    , microlens >= 0.4 && < 0.5
-    , microlens-ghc >= 0.4 && < 0.5
-    , cereal >= 0.4 && < 0.6
-    , data-default-class >= 0.0 && < 0.2
-  if flag(hasDBus)
-    cpp-options: -DDBusMock
   exposed-modules:
       Bluetooth
       Bluetooth.Internal.DBus
@@ -78,6 +59,26 @@ library
       Bluetooth.Internal.Serialize
       Bluetooth.Internal.Types
       Bluetooth.Internal.Utils
+  hs-source-dirs:
+      src
+  default-extensions: AutoDeriveTypeable ConstraintKinds DataKinds DefaultSignatures DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable FlexibleContexts FlexibleInstances FunctionalDependencies GADTs KindSignatures MultiParamTypeClasses OverloadedStrings RankNTypes ScopedTypeVariables TypeFamilies TypeOperators
+  ghc-options: -Wall
+  build-depends:
+      base >=4.8 && <4.10
+    , bytestring >=0.10 && <0.11
+    , cereal >=0.4 && <0.6
+    , containers >=0.5 && <0.6
+    , d-bus >=0.1.5 && <0.2
+    , data-default-class >=0.0 && <0.2
+    , microlens >=0.4 && <0.5
+    , microlens-ghc >=0.4 && <0.5
+    , mtl >=2.2 && <2.3
+    , random >=1 && <2
+    , text >=1 && <2
+    , transformers >=0.4 && <0.6
+    , uuid >=1 && <2
+  if flag(hasDBus)
+    cpp-options: -DDBusMock
   default-language: Haskell2010
 
 executable auth
@@ -85,28 +86,26 @@ executable auth
   hs-source-dirs:
       examples
   default-extensions: AutoDeriveTypeable ConstraintKinds DataKinds DefaultSignatures DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable FlexibleContexts FlexibleInstances FunctionalDependencies GADTs KindSignatures MultiParamTypeClasses OverloadedStrings RankNTypes ScopedTypeVariables TypeFamilies TypeOperators
-  ghc-options: -Wall
+  ghc-options: -Wall -main-is Auth
   build-depends:
-      base >= 4.8 && < 4.10
-    , bytestring >= 0.10 && < 0.11
-    , text >= 1 && < 2
-    , d-bus >= 0.1.5 && < 0.2
-    , uuid >= 1 && < 2
-    , mtl >= 2.2 && < 2.3
-    , transformers >= 0.4 && < 0.6
-    , containers >= 0.5 && < 0.6
-    , random >= 1 && < 2
-    , microlens >= 0.4 && < 0.5
-    , microlens-ghc >= 0.4 && < 0.5
-    , cereal >= 0.4 && < 0.6
-    , data-default-class >= 0.0 && < 0.2
+      base >=4.8 && <4.10
     , ble
+    , bytestring >=0.10 && <0.11
+    , cereal >=0.4 && <0.6
+    , containers >=0.5 && <0.6
+    , d-bus >=0.1.5 && <0.2
+    , data-default-class >=0.0 && <0.2
+    , hslogger
+    , microlens >=0.4 && <0.5
+    , microlens-ghc >=0.4 && <0.5
+    , mtl >=2.2 && <2.3
+    , optparse-applicative
+    , random >=1 && <2
+    , text >=1 && <2
+    , transformers >=0.4 && <0.6
+    , uuid >=1 && <2
   if flag(hasDBus)
     cpp-options: -DDBusMock
-  other-modules:
-      HeartRate
-      HeartRateClient
-      README
   default-language: Haskell2010
 
 executable hrs
@@ -114,30 +113,26 @@ executable hrs
   hs-source-dirs:
       examples
   default-extensions: AutoDeriveTypeable ConstraintKinds DataKinds DefaultSignatures DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable FlexibleContexts FlexibleInstances FunctionalDependencies GADTs KindSignatures MultiParamTypeClasses OverloadedStrings RankNTypes ScopedTypeVariables TypeFamilies TypeOperators
-  ghc-options: -Wall -threaded
+  ghc-options: -Wall -threaded -main-is HeartRate
   build-depends:
-      base >= 4.8 && < 4.10
-    , bytestring >= 0.10 && < 0.11
-    , text >= 1 && < 2
-    , d-bus >= 0.1.5 && < 0.2
-    , uuid >= 1 && < 2
-    , mtl >= 2.2 && < 2.3
-    , transformers >= 0.4 && < 0.6
-    , containers >= 0.5 && < 0.6
-    , random >= 1 && < 2
-    , microlens >= 0.4 && < 0.5
-    , microlens-ghc >= 0.4 && < 0.5
-    , cereal >= 0.4 && < 0.6
-    , data-default-class >= 0.0 && < 0.2
+      base >=4.8 && <4.10
     , ble
+    , bytestring >=0.10 && <0.11
+    , cereal >=0.4 && <0.6
+    , containers >=0.5 && <0.6
+    , d-bus >=0.1.5 && <0.2
+    , data-default-class >=0.0 && <0.2
     , hslogger
-    , optparse-applicative >= 0.12 && < 0.14
+    , microlens >=0.4 && <0.5
+    , microlens-ghc >=0.4 && <0.5
+    , mtl >=2.2 && <2.3
+    , optparse-applicative
+    , random >=1 && <2
+    , text >=1 && <2
+    , transformers >=0.4 && <0.6
+    , uuid >=1 && <2
   if flag(hasDBus)
     cpp-options: -DDBusMock
-  other-modules:
-      Auth
-      HeartRateClient
-      README
   default-language: Haskell2010
 
 executable hrs-client
@@ -145,28 +140,26 @@ executable hrs-client
   hs-source-dirs:
       examples
   default-extensions: AutoDeriveTypeable ConstraintKinds DataKinds DefaultSignatures DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable FlexibleContexts FlexibleInstances FunctionalDependencies GADTs KindSignatures MultiParamTypeClasses OverloadedStrings RankNTypes ScopedTypeVariables TypeFamilies TypeOperators
-  ghc-options: -Wall -threaded
+  ghc-options: -Wall -threaded -main-is HeartRateClient
   build-depends:
-      base >= 4.8 && < 4.10
-    , bytestring >= 0.10 && < 0.11
-    , text >= 1 && < 2
-    , d-bus >= 0.1.5 && < 0.2
-    , uuid >= 1 && < 2
-    , mtl >= 2.2 && < 2.3
-    , transformers >= 0.4 && < 0.6
-    , containers >= 0.5 && < 0.6
-    , random >= 1 && < 2
-    , microlens >= 0.4 && < 0.5
-    , microlens-ghc >= 0.4 && < 0.5
-    , cereal >= 0.4 && < 0.6
-    , data-default-class >= 0.0 && < 0.2
+      base >=4.8 && <4.10
     , ble
+    , bytestring >=0.10 && <0.11
+    , cereal >=0.4 && <0.6
+    , containers >=0.5 && <0.6
+    , d-bus >=0.1.5 && <0.2
+    , data-default-class >=0.0 && <0.2
+    , hslogger
+    , microlens >=0.4 && <0.5
+    , microlens-ghc >=0.4 && <0.5
+    , mtl >=2.2 && <2.3
+    , optparse-applicative
+    , random >=1 && <2
+    , text >=1 && <2
+    , transformers >=0.4 && <0.6
+    , uuid >=1 && <2
   if flag(hasDBus)
     cpp-options: -DDBusMock
-  other-modules:
-      Auth
-      HeartRate
-      README
   default-language: Haskell2010
 
 executable readme
@@ -176,63 +169,60 @@ executable readme
   default-extensions: AutoDeriveTypeable ConstraintKinds DataKinds DefaultSignatures DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable FlexibleContexts FlexibleInstances FunctionalDependencies GADTs KindSignatures MultiParamTypeClasses OverloadedStrings RankNTypes ScopedTypeVariables TypeFamilies TypeOperators
   ghc-options: -Wall -pgmL markdown-unlit
   build-depends:
-      base >= 4.8 && < 4.10
-    , bytestring >= 0.10 && < 0.11
-    , text >= 1 && < 2
-    , d-bus >= 0.1.5 && < 0.2
-    , uuid >= 1 && < 2
-    , mtl >= 2.2 && < 2.3
-    , transformers >= 0.4 && < 0.6
-    , containers >= 0.5 && < 0.6
-    , random >= 1 && < 2
-    , microlens >= 0.4 && < 0.5
-    , microlens-ghc >= 0.4 && < 0.5
-    , cereal >= 0.4 && < 0.6
-    , data-default-class >= 0.0 && < 0.2
+      base >=4.8 && <4.10
     , ble
-    , stm
+    , bytestring >=0.10 && <0.11
+    , cereal >=0.4 && <0.6
+    , containers >=0.5 && <0.6
+    , d-bus >=0.1.5 && <0.2
+    , data-default-class >=0.0 && <0.2
     , markdown-unlit
+    , microlens >=0.4 && <0.5
+    , microlens-ghc >=0.4 && <0.5
+    , mtl >=2.2 && <2.3
+    , random >=1 && <2
+    , stm
+    , text >=1 && <2
+    , transformers >=0.4 && <0.6
+    , uuid >=1 && <2
   if flag(hasDBus)
     cpp-options: -DDBusMock
-  other-modules:
-      Auth
-      HeartRate
-      HeartRateClient
   default-language: Haskell2010
 
 test-suite spec
   type: exitcode-stdio-1.0
   main-is: Main.hs
-  hs-source-dirs:
-      test
-  default-extensions: AutoDeriveTypeable ConstraintKinds DataKinds DefaultSignatures DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable FlexibleContexts FlexibleInstances FunctionalDependencies GADTs KindSignatures MultiParamTypeClasses OverloadedStrings RankNTypes ScopedTypeVariables TypeFamilies TypeOperators
-  ghc-options: -Wall
-  build-depends:
-      base >= 4.8 && < 4.10
-    , bytestring >= 0.10 && < 0.11
-    , text >= 1 && < 2
-    , d-bus >= 0.1.5 && < 0.2
-    , uuid >= 1 && < 2
-    , mtl >= 2.2 && < 2.3
-    , transformers >= 0.4 && < 0.6
-    , containers >= 0.5 && < 0.6
-    , random >= 1 && < 2
-    , microlens >= 0.4 && < 0.5
-    , microlens-ghc >= 0.4 && < 0.5
-    , cereal >= 0.4 && < 0.6
-    , data-default-class >= 0.0 && < 0.2
-    , ble
-    , hspec > 2 && < 3
-    , QuickCheck >= 2.8 && < 2.10
-    , quickcheck-instances >= 0.3 && < 0.4
-    , process >= 1.2 && < 1.5
-    , hslogger
-  if flag(hasDBus)
-    cpp-options: -DDBusMock
   other-modules:
       Bluetooth.TypesSpec
       BluetoothSpec
       Doctest
       Mock
       Spec
+      Paths_ble
+  hs-source-dirs:
+      test
+  default-extensions: AutoDeriveTypeable ConstraintKinds DataKinds DefaultSignatures DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable FlexibleContexts FlexibleInstances FunctionalDependencies GADTs KindSignatures MultiParamTypeClasses OverloadedStrings RankNTypes ScopedTypeVariables TypeFamilies TypeOperators
+  ghc-options: -Wall
+  build-depends:
+      QuickCheck >=2.8 && <2.10
+    , base >=4.8 && <4.10
+    , ble
+    , bytestring >=0.10 && <0.11
+    , cereal >=0.4 && <0.6
+    , containers >=0.5 && <0.6
+    , d-bus >=0.1.5 && <0.2
+    , data-default-class >=0.0 && <0.2
+    , hslogger
+    , hspec >2 && <3
+    , microlens >=0.4 && <0.5
+    , microlens-ghc >=0.4 && <0.5
+    , mtl >=2.2 && <2.3
+    , process >=1.2 && <1.5
+    , quickcheck-instances >=0.3 && <0.4
+    , random >=1 && <2
+    , text >=1 && <2
+    , transformers >=0.4 && <0.6
+    , uuid >=1 && <2
+  if flag(hasDBus)
+    cpp-options: -DDBusMock
   default-language: Haskell2010
