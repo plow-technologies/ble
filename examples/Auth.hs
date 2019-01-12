@@ -1,4 +1,4 @@
-module Main (main) where
+module Auth (main) where
 
 -- This examples contains a simple Characteristic which only allows encrypted
 -- authenticated reads. If the device pairing was not authenticated and

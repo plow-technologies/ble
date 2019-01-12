@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-module Main (main) where
+module HeartRate (main) where
 
 -- This example contains a demonstration of the standard Heart Rate Service
 -- (HRS). It serves as an examples of using notifications.
@@ -14,7 +14,6 @@ import Control.Concurrent
 import Control.Monad
 import Control.Monad.IO.Class
 import Data.IORef
-import Data.Monoid
 import Data.String                   (fromString)
 import Data.Word                     (Word8)
 import System.Log.Logger

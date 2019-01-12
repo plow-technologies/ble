@@ -1,4 +1,4 @@
-module Main (main) where
+module Doctest (main) where
 
 -- Runs doctest on all files in "src" dir. Assumes:
 --   (a) You are using hpack
@@ -18,9 +18,6 @@ instance FromJSON Exts where
 
 main :: IO ()
 main = do
-  hpack' <- decodeFile "package.yaml"
-  hpack <- case hpack' of
-    Nothing -> return $ Exts []
-    Just v  -> return v
+  hpack <- either (const $ Exts []) id <$> decodeFileEither "package.yaml"
   files <- glob "src/**/*.hs"
   doctest $ files ++ fmap ("-X" ++) (getExts hpack)

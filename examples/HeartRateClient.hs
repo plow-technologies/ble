@@ -1,4 +1,4 @@
-module Main (main) where
+module HeartRateClient (main) where
 
 import Bluetooth
 import Control.Concurrent

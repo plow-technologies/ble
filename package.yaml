@@ -21,7 +21,7 @@ flags:
   bluez543:
     description: Bluez version 5.43 or greater
     manual: True
-    default: False
+    default: True
   hasBluez:
     description: Whether to run tests that require Bluez
     manual: True
@@ -96,6 +96,12 @@ tests:
   spec:
     main:            Main.hs
     source-dirs:     test
+    other-modules:
+      - Bluetooth.TypesSpec
+      - BluetoothSpec
+      - Mock
+      - Spec
+      - Paths_ble
     dependencies:
       - ble
       - hspec > 2 && < 3
@@ -103,19 +109,23 @@ tests:
       - quickcheck-instances >= 0.3 && < 0.4
       - process >= 1.2 && < 1.5
       - hslogger
-#   doctest:
-#     main:            Doctest.hs
-#     source-dirs:     test
-#     dependencies:
-#       - doctest >= 0.9 && < 0.12
-#       - Glob >= 0.7 && < 0.8
-#       - yaml == 0.8.*
+  doctest:
+    main:            Doctest.hs
+    source-dirs:     test
+    ghc-options:     -main-is Doctest
+    other-modules:   []
+    dependencies:
+      - doctest >= 0.9 && < 0.12
+      - Glob >= 0.7 && < 0.8
+      - yaml == 0.8.*
+      - filepath
 
 executables:
   readme:
     main:            README.lhs
     source-dirs:     examples
-    ghc-options:    -pgmL markdown-unlit
+    ghc-options:     -pgmL markdown-unlit
+    other-modules:   []
     dependencies:
       - ble
       - stm
@@ -123,19 +133,27 @@ executables:
   hrs:
     main:            HeartRate.hs
     source-dirs:     examples
-    ghc-options:     -threaded
+    ghc-options:     -threaded -main-is HeartRate
+    other-modules:   []
     dependencies:
       - ble
       - hslogger
-      - optparse-applicative >= 0.12 && < 0.14
+      - optparse-applicative
   auth:
     main:            Auth.hs
     source-dirs:     examples
+    ghc-options:     -main-is Auth
+    other-modules:   []
     dependencies:
       - ble
+      - hslogger
+      - optparse-applicative
   hrs-client:
     main:            HeartRateClient.hs
     source-dirs:     examples
-    ghc-options:     -threaded
+    ghc-options:     -threaded -main-is HeartRateClient
+    other-modules:   []
     dependencies:
       - ble
+      - hslogger
+      - optparse-applicative
